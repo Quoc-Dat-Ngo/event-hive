@@ -1,3 +1,22 @@
+server:
+  port: 8181
+
 spring:
   application:
     name: eventhive
+
+  datasource:
+    url: jdbc:postgresql://localhost:5333/eventhive_dev
+    username: kevinngo
+    password: password
+  
+  jpa:
+    hibernate:
+        ddl-auto: none
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
