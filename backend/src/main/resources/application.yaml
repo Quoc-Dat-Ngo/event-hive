@@ -9,14 +9,17 @@ spring:
     url: jdbc:postgresql://localhost:5333/eventhive_dev
     username: kevinngo
     password: password
+    
+  flyway:
+    enabled: true
+    repair: true
   
   jpa:
     hibernate:
-        ddl-auto: none
+        ddl-auto: validate
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
-
