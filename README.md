@@ -18,12 +18,12 @@ Also using cloud-native tool such as Docker to handle application containerisati
 
 ## Status
 
-🚧 Actively in development — see roadmap below.
+Actively in development — see roadmap below.
 
 - [x] Domain modeling & ERD
 - [x] Spring Boot scaffold + dependencies
 - [x] Postgres + Docker Compose (dev environment)
-- [ ] Database schema migrations (Flyway)
+- [x] Database schema migrations (Flyway)
 - [ ] Core CRUD REST API
 - [ ] JWT authentication + RBAC
 - [ ] Redis-based seat locking
