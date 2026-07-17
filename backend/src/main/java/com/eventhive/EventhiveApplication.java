@@ -1,13 +1,10 @@
 package com.eventhive;
 
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-
-import com.eventhive.users.User;
 
 @SpringBootApplication
 public class EventhiveApplication {
@@ -22,16 +19,5 @@ public class EventhiveApplication {
 				.csrf((csrf) -> csrf.disable());
 		return http.build();
 	}
-
-	// @Bean
-	// CommandLineRunner runner() {
-	// return args -> {
-	// createRandomUser();
-	// };
-	// }
-
-	// private static void createRandomUser() {
-	// User user = new User
-	// }
 
 }

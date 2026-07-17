@@ -1,18 +1,20 @@
-CREATE TYPE user_role AS ENUM ('USER', 'EVENT_ORGANISER', 'ADMIN');
-CREATE TYPE event_status AS ENUM ('DRAFT', 'PUBLISHED', 'CANCELLED');
-CREATE TYPE booking_status AS ENUM ('PENDING', 'CONFIRMED', 'EXPIRED', 'CANCELLED');
-CREATE TYPE payment_status AS ENUM ('SUCCEEDED', 'FAILED', 'REFUNDED');
-
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255),
-    auth_provider TEXT,
-    role user_role NOT NULL,
+    auth_provider VARCHAR(50) NOT NULL,
+    role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    updated_at TIMESTAMP DEFAULT now(),
+
+    CONSTRAINT chk_password_or_oauth
+    CHECK (
+        (auth_provider = 'LOCAL' AND password_hash IS NOT NULL)
+        OR 
+        (auth_provider <> 'LOCAL' AND password_hash IS NULL)
+    )
 );
 
 CREATE TABLE venues (
@@ -42,7 +44,7 @@ CREATE TABLE events (
     starts_at TIMESTAMP NOT NULL,
     ends_at TIMESTAMP NOT NULL,
     performer VARCHAR(255),
-    status event_status NOT NULL,
+    status VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
     venue_id UUID REFERENCES venues(id) NOT NULL
@@ -50,7 +52,7 @@ CREATE TABLE events (
 
 CREATE TABLE bookings(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    status booking_status NOT NULL,
+    status VARCHAR(50) NOT NULL,
     price_cents INTEGER,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
@@ -66,7 +68,7 @@ CREATE TABLE payments(
     stripe_payment_intent_id VARCHAR(255) NOT NULL,
     amount_cents INTEGER NOT NULL,
     currency VARCHAR(3) NOT NULL,
-    status payment_status NOT NULL,
+    status VARCHAR(50) NOT NULL,
     purchased_at TIMESTAMP DEFAULT now(),
     refunded_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT now(),
