@@ -1,7 +1,5 @@
 package com.eventhive.users;
 
-import java.util.Optional;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +9,7 @@ public record UserRegistrationRequest(
         @NotBlank(message = "First name cannot be blank") @Size(max = 100) String firstName,
         @NotBlank(message = "Last name cannot be blank") @Size(max = 100) String lastName,
         @Email String email,
-        Optional<String> passwordHash,
+        String password,
         @NotNull(message = "Auth provider is required") AuthProvider authProvider,
         @NotNull(message = "Role is required") UserRole role) {
 
