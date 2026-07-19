@@ -3,6 +3,8 @@ package com.eventhive.users;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,9 +27,9 @@ public class UserService {
         Page<User> usersPage;
         if (search == null) {
             usersPage = userRepository.findAll(pageable);
+        } else {
+            usersPage = userRepository.findUserByFirstNameContainingIgnoreCase(search, pageable);
         }
-
-        usersPage = userRepository.findUserByFirstNameContainingIgnoreCase(search, pageable);
 
         return usersPage.stream().map(userDTOMapper).toList();
     }
@@ -42,14 +44,29 @@ public class UserService {
             throw new DuplicateResourceException("Email already taken");
         }
 
-        String passwordHash = request.passwordHash().isPresent() ? passwordEncoder.encode(request.passwordHash().get())
-                : null;
+        String passwordHash = null;
+        if (request.password() != null && !request.password().trim().equals("")) {
+            passwordHash = passwordEncoder.encode(request.password());
+        }
         User user = new User(request.firstName(), request.lastName(), request.email(), passwordHash,
                 request.authProvider(), request.role());
 
-        userRepository.save(user);
+        try {
+            userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            if (isConstraintViolation(e, "user_email_unique")) {
+                throw new DuplicateResourceException("Email already taken");
+            }
+            throw e;
+        }
 
         return userDTOMapper.apply(user);
+    }
+
+    private boolean isConstraintViolation(DataIntegrityViolationException e, String constraintName) {
+        Throwable cause = e.getCause();
+        return cause instanceof ConstraintViolationException cve
+                && constraintName.equalsIgnoreCase(cve.getConstraintName());
     }
 
     public UserDTO updateUser(UUID id, UserUpdateRequest request) {
