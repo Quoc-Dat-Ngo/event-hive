@@ -6,8 +6,8 @@ CREATE TABLE users (
     password_hash VARCHAR(255),
     auth_provider VARCHAR(50) NOT NULL,
     role VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
 
     CONSTRAINT chk_password_or_oauth
     CHECK (
@@ -22,16 +22,16 @@ CREATE TABLE venues (
     name VARCHAR(255) NOT NULL,
     capacity INTEGER NOT NULL,
     location VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 CREATE TABLE seats (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     seat_row CHAR(2) NOT NULL,
     number INTEGER NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     venue_id UUID REFERENCES venues(id) NOT NULL,
 
     UNIQUE(seat_row,number,venue_id)
@@ -41,12 +41,12 @@ CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     purpose TEXT,
-    starts_at TIMESTAMP NOT NULL,
-    ends_at TIMESTAMP NOT NULL,
+    starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    ends_at TIMESTAMP WITH TIME ZONE NOT NULL,
     performer VARCHAR(255),
     status VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     venue_id UUID REFERENCES venues(id) NOT NULL
 );
 
@@ -54,8 +54,8 @@ CREATE TABLE bookings(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     status VARCHAR(50) NOT NULL,
     price_cents INTEGER,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     event_id UUID REFERENCES events(id) NOT NULL,
     user_id UUID REFERENCES users(id) NOT NULL,
     seat_id UUID REFERENCES seats(id) NOT NULL,
@@ -69,10 +69,10 @@ CREATE TABLE payments(
     amount_cents INTEGER NOT NULL,
     currency VARCHAR(3) NOT NULL,
     status VARCHAR(50) NOT NULL,
-    purchased_at TIMESTAMP DEFAULT now(),
-    refunded_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    purchased_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    refunded_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     booking_id UUID REFERENCES bookings(id) NOT NULL
 );
 
