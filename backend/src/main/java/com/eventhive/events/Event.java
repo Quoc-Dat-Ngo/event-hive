@@ -49,7 +49,7 @@ public class Event {
     private String performer;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private EventStatus status;
 
     @CreationTimestamp

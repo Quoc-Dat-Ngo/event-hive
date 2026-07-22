@@ -46,11 +46,11 @@ public class User {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "auth_provider", nullable = false)
+    @Column(name = "auth_provider", nullable = false, length = 50)
     private AuthProvider authProvider;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
+    @Column(name = "role", nullable = false, length = 50)
     private UserRole role;
 
     @CreationTimestamp

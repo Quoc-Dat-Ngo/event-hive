@@ -18,7 +18,7 @@ public class EventDTOMapper implements Function<Event, EventDTO> {
                 e.getPerformer(),
                 e.getStatus().name(),
                 e.getCreatedAt(),
-                e.getUpdatedAt());
+                e.getUpdatedAt(),
+                e.getVenue().getId());
     }
-
 }

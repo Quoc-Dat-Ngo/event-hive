@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eventhive.exception.DuplicateResourceException;
-import com.eventhive.exception.RequestValidationException;
 import com.eventhive.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
