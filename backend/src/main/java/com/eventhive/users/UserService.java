@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.eventhive.exception.DuplicateResourceException;
 import com.eventhive.exception.RequestValidationException;
@@ -69,27 +70,19 @@ public class UserService {
                 && constraintName.equalsIgnoreCase(cve.getConstraintName());
     }
 
+    @Transactional
     public UserDTO updateUser(UUID id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id '" + id + "' not found"));
 
-        boolean changes = false;
-
-        if (request.firstName() != null && !request.firstName().equals(user.getFirstName())) {
+        if (request.firstName() != null) {
             user.setFirstName(request.firstName());
-            changes = true;
         }
 
-        if (request.lastName() != null && !request.lastName().equals(user.getLastName())) {
+        if (request.lastName() != null) {
             user.setLastName(request.lastName());
-            changes = true;
         }
 
-        if (!changes) {
-            throw new RequestValidationException("No data changes found");
-        }
-
-        userRepository.save(user);
         return userDTOMapper.apply(user);
     }
 

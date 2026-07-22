@@ -1,10 +1,9 @@
 package com.eventhive.users;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record UserUpdateRequest(
-        @NotBlank(message = "First name cannot be blank") @Size(max = 100) String firstName,
+		@Size(min = 3, message = "First name must be at least 3 characters") String firstName,
 
-        @NotBlank(message = "Last name cannot be blank") @Size(max = 100) String lastName) {
+		@Size(min = 3, message = "Last name must be at least 3 characters") String lastName) {
 }

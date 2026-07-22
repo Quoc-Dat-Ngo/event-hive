@@ -78,7 +78,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleException(Exception e, HttpServletRequest request) {
         ApiError apiError = new ApiError(
                 request.getRequestURI(),
-                "An unexpected error occurred",
+                e.getMessage(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 LocalDateTime.now());
         return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
