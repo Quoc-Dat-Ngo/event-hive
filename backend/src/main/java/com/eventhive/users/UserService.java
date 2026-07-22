@@ -3,13 +3,15 @@ package com.eventhive.users;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.eventhive.exception.DuplicateResourceException;
-import com.eventhive.exception.RequestValidationException;
 import com.eventhive.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -25,9 +27,9 @@ public class UserService {
         Page<User> usersPage;
         if (search == null) {
             usersPage = userRepository.findAll(pageable);
+        } else {
+            usersPage = userRepository.findUserByFirstNameContainingIgnoreCase(search, pageable);
         }
-
-        usersPage = userRepository.findUserByFirstNameContainingIgnoreCase(search, pageable);
 
         return usersPage.stream().map(userDTOMapper).toList();
     }
@@ -42,37 +44,44 @@ public class UserService {
             throw new DuplicateResourceException("Email already taken");
         }
 
-        String passwordHash = request.passwordHash().isPresent() ? passwordEncoder.encode(request.passwordHash().get())
-                : null;
+        String passwordHash = null;
+        if (request.password() != null && !request.password().trim().equals("")) {
+            passwordHash = passwordEncoder.encode(request.password());
+        }
         User user = new User(request.firstName(), request.lastName(), request.email(), passwordHash,
                 request.authProvider(), request.role());
 
-        userRepository.save(user);
+        try {
+            userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            if (isConstraintViolation(e, "user_email_unique")) {
+                throw new DuplicateResourceException("Email already taken");
+            }
+            throw e;
+        }
 
         return userDTOMapper.apply(user);
     }
 
+    private boolean isConstraintViolation(DataIntegrityViolationException e, String constraintName) {
+        Throwable cause = e.getCause();
+        return cause instanceof ConstraintViolationException cve
+                && constraintName.equalsIgnoreCase(cve.getConstraintName());
+    }
+
+    @Transactional
     public UserDTO updateUser(UUID id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id '" + id + "' not found"));
 
-        boolean changes = false;
-
-        if (request.firstName() != null && !request.firstName().equals(user.getFirstName())) {
+        if (request.firstName() != null) {
             user.setFirstName(request.firstName());
-            changes = true;
         }
 
-        if (request.lastName() != null && !request.lastName().equals(user.getLastName())) {
+        if (request.lastName() != null) {
             user.setLastName(request.lastName());
-            changes = true;
         }
 
-        if (!changes) {
-            throw new RequestValidationException("No data changes found");
-        }
-
-        userRepository.save(user);
         return userDTOMapper.apply(user);
     }
 

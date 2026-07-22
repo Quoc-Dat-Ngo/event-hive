@@ -2,11 +2,11 @@ package com.eventhive.events;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
-
-import com.eventhive.exception.RequestValidationException;
+import org.springframework.transaction.annotation.Transactional;
 import com.eventhive.exception.ResourceNotFoundException;
+import com.eventhive.venues.Venue;
+import com.eventhive.venues.VenueRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EventService {
     private final EventRepository eventRepo;
+    private final VenueRepository venueRepo;
     private final EventDTOMapper mapper;
 
     public List<EventDTO> getEvents() {
@@ -26,47 +27,39 @@ public class EventService {
     }
 
     public EventDTO addEvent(EventRegistrationRequest request) {
+        Venue venue = venueRepo.findById(request.venueId())
+                .orElseThrow(() -> new ResourceNotFoundException("Venue with id not found " + request.venueId()));
+
         Event event = new Event(request.title(), request.purpose(), request.startsAt(), request.endsAt(),
-                request.performer(), request.status());
+                request.performer(), request.status(), venue);
         eventRepo.save(event);
 
         return mapper.apply(event);
     }
 
+    @Transactional
     public EventDTO updateEvent(UUID id, EventUpdateRequest request) {
         Event event = eventRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Event not found " + id));
-        boolean changes = false;
 
-        if (request.title() != null && !request.title().equals(event.getTitle())) {
+        if (request.title() != null) {
             event.setTitle(request.title());
-            changes = true;
         }
-        if (request.purpose() != null && !request.purpose().equals(event.getPurpose())) {
+        if (request.purpose() != null) {
             event.setPurpose(request.purpose());
-            changes = true;
         }
-        if (request.startsAt() != null && !request.startsAt().equals(event.getStartsAt())) {
+        if (request.startsAt() != null) {
             event.setStartsAt(request.startsAt());
-            changes = true;
         }
-        if (request.endsAt() != null && !request.endsAt().equals(event.getEndsAt())) {
+        if (request.endsAt() != null) {
             event.setEndsAt(request.endsAt());
-            changes = true;
         }
-        if (request.performer() != null && !request.performer().equals(event.getPerformer())) {
+        if (request.performer() != null) {
             event.setPerformer(request.performer());
-            changes = true;
         }
-        if (request.status() != null && !request.status().name().equals(event.getStatus().name())) {
+        if (request.status() != null) {
             event.setStatus(request.status());
-            changes = true;
         }
 
-        if (!changes) {
-            throw new RequestValidationException("No data changes found");
-        }
-
-        eventRepo.save(event);
         return mapper.apply(event);
     }
 

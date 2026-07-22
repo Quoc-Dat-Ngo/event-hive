@@ -2,6 +2,9 @@ package com.eventhive.events;
 
 import java.util.function.Function;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class EventDTOMapper implements Function<Event, EventDTO> {
 
     @Override
@@ -15,7 +18,7 @@ public class EventDTOMapper implements Function<Event, EventDTO> {
                 e.getPerformer(),
                 e.getStatus().name(),
                 e.getCreatedAt(),
-                e.getUpdatedAt());
+                e.getUpdatedAt(),
+                e.getVenue().getId());
     }
-
 }

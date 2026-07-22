@@ -29,8 +29,14 @@ public class UserController {
             @RequestParam(required = false, defaultValue = "20") int pageSize,
             @RequestParam(required = false, defaultValue = "+firstName") String sortBy,
             @RequestParam(required = false) String search) {
-        Sort sort = sortBy.startsWith("-") ? Sort.by(sortBy.substring(1)).descending()
-                : Sort.by(sortBy.substring(1)).ascending();
+        Sort sort = null;
+        if (sortBy.startsWith("+")) {
+            sort = Sort.by(sortBy.substring(1)).ascending();
+        } else if (sortBy.startsWith("-")) {
+            sort = Sort.by(sortBy.substring(1)).descending();
+        } else {
+            sort = Sort.by(sortBy).ascending();
+        }
         return userService.getAllUsers(PageRequest.of(pageNo - 1, pageSize, sort), search);
     }
 
