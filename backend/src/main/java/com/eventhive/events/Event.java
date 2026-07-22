@@ -6,6 +6,8 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.eventhive.venues.Venue;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -51,23 +53,25 @@ public class Event {
     private EventStatus status;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
 
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "venue_id", nullable = false)
-    // private Venue venue;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id", nullable = false)
+    private Venue venue;
 
-    public Event(String title, String purpose, Instant startsAt, Instant endsAt, String performer, EventStatus status) {
+    public Event(String title, String purpose, Instant startsAt, Instant endsAt, String performer, EventStatus status,
+            Venue venue) {
         this.title = title;
         this.purpose = purpose;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
         this.performer = performer;
         this.status = status;
+        this.venue = venue;
     }
 }

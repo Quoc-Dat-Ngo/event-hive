@@ -2,6 +2,9 @@ package com.eventhive.events;
 
 import java.util.function.Function;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class EventDTOMapper implements Function<Event, EventDTO> {
 
     @Override

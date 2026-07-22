@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class EventController {
     private final EventService eventService;
 
+    // TODO: Handle pagination, sorting, filtering
     @GetMapping
     public List<EventDTO> getAllEvents() {
         return eventService.getEvents();
