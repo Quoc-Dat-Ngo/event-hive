@@ -52,4 +52,17 @@ public class VenueController {
             @PathVariable("venueId") UUID id) {
         service.removeVenue(id);
     }
+
+    @GetMapping("/{venueId}/events")
+    public List<EventSummaryDTO> getEvents(
+            @PathVariable("venueId") UUID id) {
+        return service.getEvents(id);
+    }
+
+    @GetMapping("/{venueId}/seats")
+    public List<SeatSummaryDTO> getSeats(@PathVariable("venueId") UUID id) {
+        return service.getSeats(id);
+
+    }
+
 }

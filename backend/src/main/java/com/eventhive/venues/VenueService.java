@@ -6,7 +6,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.eventhive.events.EventRepository;
 import com.eventhive.exception.ResourceNotFoundException;
+import com.eventhive.seats.SeatRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class VenueService {
     private final VenueRepository venueRepo;
+    private final EventRepository eventRepo;
+    private final SeatRepository seatRepo;
     private final VenueDTOMapper mapper;
 
     public List<VenueDTO> getAllVenues() {
@@ -50,5 +54,13 @@ public class VenueService {
 
     public void removeVenue(UUID id) {
         venueRepo.deleteById(id);
+    }
+
+    public List<EventSummaryDTO> getEvents(UUID id) {
+        return eventRepo.findAllEventsAssociatedWithVenueId(id);
+    }
+
+    public List<SeatSummaryDTO> getSeats(UUID id) {
+        return seatRepo.findAllSeatsAssociatedWithVenueId(id);
     }
 }
