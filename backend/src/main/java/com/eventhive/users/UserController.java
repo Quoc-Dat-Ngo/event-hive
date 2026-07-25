@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.eventhive.bookings.BookingSummaryDTO;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -62,6 +64,11 @@ public class UserController {
     public void deleteUser(
             @PathVariable("userId") UUID userId) {
         userService.deleteUser(userId);
+    }
+
+    @GetMapping("/{userId}/bookings")
+    public List<BookingSummaryDTO> getAllBookings(@PathVariable("userId") UUID id) {
+        return userService.getBookings(id);
     }
 
 }

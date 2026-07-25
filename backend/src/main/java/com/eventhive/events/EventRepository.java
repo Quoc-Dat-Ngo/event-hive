@@ -11,17 +11,17 @@ import com.eventhive.venues.EventSummaryDTO;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
     @Query("""
-            SELECT new com.eventhive.events.VenueSummaryDTO(v.name, v.location, v.capacity)
+            SELECT NEW com.eventhive.events.VenueSummaryDTO(v.name, v.location, v.capacity)
             FROM Event e
             JOIN e.venue v
             WHERE e.id = ?1
                 """)
-    Optional<VenueSummaryDTO> findHostVenueById(UUID id);
+    Optional<VenueSummaryDTO> findHostVenueById(UUID eventId);
 
     @Query("""
-                SELECT new com.eventhive.venues.EventSummaryDTO(e.id, e.title, e.purpose, e.startsAt, e.endsAt, e.performer, e.status)
+                SELECT NEW com.eventhive.venues.EventSummaryDTO(e.title, e.purpose, e.startsAt, e.endsAt, e.performer, e.status)
                 FROM Event e
                 WHERE e.venue.id = ?1
             """)
-    List<EventSummaryDTO> findAllEventsAssociatedWithVenueId(UUID id);
+    List<EventSummaryDTO> findAllEventsAssociatedWithVenueId(UUID venueId);
 }

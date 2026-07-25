@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.eventhive.bookings.BookingRepository;
+import com.eventhive.bookings.BookingSummaryDTO;
 import com.eventhive.exception.DuplicateResourceException;
 import com.eventhive.exception.ResourceNotFoundException;
 
@@ -20,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepo;
     private final UserDTOMapper userDTOMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -89,5 +92,9 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id '" + id + "' not found"));
         userRepository.delete(user);
+    }
+
+    public List<BookingSummaryDTO> getBookings(UUID id) {
+        return bookingRepo.findAllBookingsByUserId(id);
     }
 }

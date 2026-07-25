@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.eventhive.bookings.BookingRepository;
+import com.eventhive.bookings.BookingSummaryDTO;
 import com.eventhive.exception.ResourceNotFoundException;
 import com.eventhive.venues.Venue;
 import com.eventhive.venues.VenueRepository;
@@ -15,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class EventService {
     private final EventRepository eventRepo;
     private final VenueRepository venueRepo;
+    private final BookingRepository bookingRepo;
     private final EventDTOMapper mapper;
 
     public List<EventDTO> getEvents() {
@@ -70,5 +74,9 @@ public class EventService {
     public VenueSummaryDTO getHost(UUID id) {
         return eventRepo.findHostVenueById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found " + id));
+    }
+
+    public List<BookingSummaryDTO> getBookings(UUID id) {
+        return bookingRepo.findAllBookingsByEventId(id);
     }
 }

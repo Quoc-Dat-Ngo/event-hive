@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.eventhive.bookings.BookingSummaryDTO;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -55,5 +57,10 @@ public class EventController {
     @GetMapping("/{eventId}/host")
     public VenueSummaryDTO getHost(@PathVariable("eventId") UUID id) {
         return eventService.getHost(id);
+    }
+
+    @GetMapping("/{eventId}/bookings")
+    public List<BookingSummaryDTO> getAllBookings(@PathVariable("eventId") UUID id) {
+        return eventService.getBookings(id);
     }
 }

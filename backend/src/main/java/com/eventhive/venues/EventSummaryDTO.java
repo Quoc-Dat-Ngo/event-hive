@@ -1,14 +1,14 @@
 package com.eventhive.venues;
 
 import java.time.Instant;
-import java.util.UUID;
+
+import com.eventhive.events.EventStatus;
 
 public record EventSummaryDTO(
-        UUID id,
-        String title,
-        String purpose,
-        Instant startsAt,
-        Instant endsAt,
-        String performer,
-        String status) {
+		String title,
+		String purpose,
+		Instant startsAt,
+		Instant endsAt,
+		String performer,
+		EventStatus status) {
 }

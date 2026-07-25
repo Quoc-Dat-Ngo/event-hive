@@ -13,7 +13,7 @@ import com.eventhive.venues.SeatSummaryDTO;
 
 public interface SeatRepository extends JpaRepository<Seat, UUID>, JpaSpecificationExecutor<Seat> {
     @Query("""
-            SELECT new com.eventhive.events.VenueSummaryDTO(v.name, v.location, v.capacity)
+            SELECT NEW com.eventhive.events.VenueSummaryDTO(v.name, v.location, v.capacity)
             FROM Seat s
             JOIN s.venue v
             WHERE s.id = ?1
@@ -21,9 +21,9 @@ public interface SeatRepository extends JpaRepository<Seat, UUID>, JpaSpecificat
     Optional<VenueSummaryDTO> findHostVenueById(UUID id);
 
     @Query("""
-                SELECT new com.eventhive.venues.SeatSummaryDTO(s.id, s.seatRow, s.number)
-                FROM Seat s
-                WHERE s.venue.id = ?1
+            SELECT NEW com.eventhive.venues.SeatSummaryDTO(s.seatRow, s.number)
+            FROM Seat s
+            WHERE s.venue.id = ?1
             """)
     List<SeatSummaryDTO> findAllSeatsAssociatedWithVenueId(UUID id);
 }
