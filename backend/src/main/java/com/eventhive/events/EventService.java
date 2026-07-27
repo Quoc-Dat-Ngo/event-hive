@@ -68,7 +68,8 @@ public class EventService {
     }
 
     public void removeEvent(UUID id) {
-        eventRepo.deleteById(id);
+        Event event = eventRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Event not found " + id));
+        eventRepo.delete(event);
     }
 
     public VenueSummaryDTO getHost(UUID id) {

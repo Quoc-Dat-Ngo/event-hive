@@ -53,7 +53,8 @@ public class VenueService {
     }
 
     public void removeVenue(UUID id) {
-        venueRepo.deleteById(id);
+        Venue venue = venueRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Venue not found " + id));
+        venueRepo.delete(venue);
     }
 
     public List<EventSummaryDTO> getEvents(UUID id) {
