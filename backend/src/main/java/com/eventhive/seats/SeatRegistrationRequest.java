@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record SeatRegistrationRequest(
-        @NotBlank(message = "Seat row cannot be blank") @Size(min = 2, max = 2, message = "Seat row is expected to contain 2 alphabetic characters only") String seatRow,
+        @NotBlank(message = "Seat row cannot be blank") @Size(min = 1, max = 2, message = "Seat row is expected to contain 1 or 2 alphabetic characters only") String seatRow,
 
         @NotNull(message = "Seat row cannot be null") @Positive(message = "Seat row number must be a positive number staring from 1") Integer number,
 

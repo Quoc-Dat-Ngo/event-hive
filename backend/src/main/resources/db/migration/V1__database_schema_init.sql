@@ -28,7 +28,7 @@ CREATE TABLE venues (
 
 CREATE TABLE seats (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    seat_row CHAR(2) NOT NULL,
+    seat_row VARCHAR(2) NOT NULL,
     number INTEGER NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),

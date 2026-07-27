@@ -18,7 +18,7 @@ public record EventUpdateRequest(
 
 		String performer,
 
-		@Size(min = 5, message = "Event title must be at least 3 characters") EventStatus status) {
+		@Size(min = 5, message = "Event status must be at least 5 characters") EventStatus status) {
 
 	public EventUpdateRequest {
 		if (startsAt != null && endsAt != null && startsAt.isAfter(endsAt)) {
