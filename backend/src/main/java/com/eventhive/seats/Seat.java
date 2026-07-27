@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.eventhive.venues.Venue;
@@ -38,7 +37,6 @@ public class Seat {
     private UUID id;
 
     @Column(nullable = false, length = 2)
-    @JdbcTypeCode(java.sql.Types.CHAR)
     private String seatRow;
 
     @Column(nullable = false)
