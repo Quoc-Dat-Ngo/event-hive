@@ -29,7 +29,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "bookings", uniqueConstraints = {
-        @UniqueConstraint(name = "booking_event_seat_unique", columnNames = { "event", "seat" })
+        @UniqueConstraint(name = "booking_event_seat_unique", columnNames = { "event_id", "seat_id" })
 })
 @NoArgsConstructor
 @AllArgsConstructor
