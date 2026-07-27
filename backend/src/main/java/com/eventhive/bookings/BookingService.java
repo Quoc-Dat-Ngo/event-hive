@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eventhive.events.Event;
 import com.eventhive.events.EventRepository;
 import com.eventhive.exception.ResourceNotFoundException;
+import com.eventhive.payments.PaymentRepository;
+import com.eventhive.payments.PaymentSummaryDTO;
 import com.eventhive.seats.Seat;
 import com.eventhive.seats.SeatRepository;
 import com.eventhive.users.User;
@@ -25,6 +27,7 @@ public class BookingService {
     private final UserRepository userRepo;
     private final EventRepository eventRepo;
     private final SeatRepository seatRepo;
+    private final PaymentRepository paymentRepo;
     private final BookingDTOMapper mapper;
 
     public List<BookingDTO> getBookings() {
@@ -88,5 +91,9 @@ public class BookingService {
     public SeatSummaryDTO getSeat(UUID bookingId) {
         return repo.findSeatByBookingId(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found " + bookingId));
+    }
+
+    public List<PaymentSummaryDTO> getAllPayments(UUID bookingId) {
+        return paymentRepo.findAllPaymentsByBookingId(bookingId);
     }
 }

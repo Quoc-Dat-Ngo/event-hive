@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.eventhive.payments.PaymentSummaryDTO;
 import com.eventhive.venues.EventSummaryDTO;
 import com.eventhive.venues.SeatSummaryDTO;
 
@@ -70,5 +71,11 @@ public class BookingController {
     public SeatSummaryDTO getSeat(
             @PathVariable("bookingId") UUID id) {
         return service.getSeat(id);
+    }
+
+    @GetMapping("/{bookingId}/payments")
+    public List<PaymentSummaryDTO> getAllPayments(
+            @PathVariable("bookingId") UUID id) {
+        return service.getAllPayments(id);
     }
 }
