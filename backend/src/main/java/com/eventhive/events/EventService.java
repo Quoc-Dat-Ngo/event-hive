@@ -1,12 +1,15 @@
 package com.eventhive.events;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eventhive.bookings.BookingRepository;
 import com.eventhive.bookings.BookingSummaryDTO;
+import com.eventhive.exception.RequestValidationException;
 import com.eventhive.exception.ResourceNotFoundException;
 import com.eventhive.venues.Venue;
 import com.eventhive.venues.VenueRepository;
@@ -44,6 +47,17 @@ public class EventService {
     @Transactional
     public EventDTO updateEvent(UUID id, EventUpdateRequest request) {
         Event event = eventRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Event not found " + id));
+
+        Instant effectiveStartsAt = request.startsAt() != null ? request.startsAt() : event.getStartsAt();
+        Instant effectiveEndsAt = request.endsAt() != null ? request.endsAt() : event.getEndsAt();
+
+        if (effectiveStartsAt != null && effectiveEndsAt != null && effectiveStartsAt.isAfter(effectiveEndsAt)) {
+            throw new RequestValidationException("Event ending time must strictly occur after starting time");
+        }
+
+        if (event.getStatus() == EventStatus.COMPLETED && (request.startsAt() != null || request.endsAt() != null)) {
+            throw new RequestValidationException("Cannot modify ending time of a completed event");
+        }
 
         if (request.title() != null) {
             event.setTitle(request.title());
