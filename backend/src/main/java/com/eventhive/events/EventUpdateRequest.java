@@ -4,7 +4,6 @@ import java.time.Instant;
 
 import com.eventhive.exception.RequestValidationException;
 
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Size;
 
 public record EventUpdateRequest(
@@ -12,13 +11,13 @@ public record EventUpdateRequest(
 
 		String purpose,
 
-		@Future(message = "Event starting time must be in the future time") Instant startsAt,
+		Instant startsAt,
 
-		@Future(message = "Event ending time must be in the future time") Instant endsAt,
+		Instant endsAt,
 
 		String performer,
 
-		@Size(min = 5, message = "Event status must be at least 5 characters") EventStatus status) {
+		EventStatus status) {
 
 	public EventUpdateRequest {
 		if (startsAt != null && endsAt != null && startsAt.isAfter(endsAt)) {

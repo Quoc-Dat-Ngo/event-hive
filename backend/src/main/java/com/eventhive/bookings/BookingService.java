@@ -75,7 +75,8 @@ public class BookingService {
     }
 
     public void removeBooking(UUID id) {
-        repo.deleteById(id);
+        Booking booking = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found " + id));
+        repo.delete(booking);
     }
 
     public UserSummaryDTO getUser(UUID bookingId) {

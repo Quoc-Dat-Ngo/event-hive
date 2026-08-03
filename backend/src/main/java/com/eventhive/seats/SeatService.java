@@ -49,7 +49,7 @@ public class SeatService {
         Seat seat = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Seat not found " + id));
 
         if (rq.seatRow() != null) {
-            seat.setSeatRow(rq.seatRow());
+            seat.setSeatRow(rq.seatRow().toUpperCase());
         }
 
         if (rq.number() != null) {
@@ -60,7 +60,8 @@ public class SeatService {
     }
 
     public void removeSeat(UUID id) {
-        repo.deleteById(id);
+        Seat seat = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Seat not found " + id));
+        repo.delete(seat);
     }
 
     public VenueSummaryDTO getHost(UUID id) {

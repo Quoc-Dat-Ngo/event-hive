@@ -58,7 +58,9 @@ public class PaymentService {
     }
 
     public void removePayment(UUID id) {
-        paymentRepo.deleteById(id);
+        Payment payment = paymentRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found " + id));
+        paymentRepo.delete(payment);
     }
 
     public BookingSummaryDTO getBooking(UUID paymentId) {
