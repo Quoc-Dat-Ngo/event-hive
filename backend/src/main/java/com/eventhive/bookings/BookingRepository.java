@@ -36,14 +36,14 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     Optional<SeatSummaryDTO> findSeatByBookingId(UUID bookingId);
 
     @Query("""
-            SELECT NEW com.eventhive.bookings.BookingSummaryDTO(b.id, b.priceCents, b.status, b.user.id, b.event.id)
+            SELECT NEW com.eventhive.bookings.BookingSummaryDTO(b.id, b.priceCents, b.status, b.user.id, b.event.id, b.seat.id)
             FROM Booking b
             WHERE b.event.id = ?1
                 """)
     List<BookingSummaryDTO> findAllBookingsByEventId(UUID eventId);
 
     @Query("""
-            SELECT NEW com.eventhive.bookings.BookingSummaryDTO(b.id, b.priceCents, b.status, b.user.id, b.event.id)
+            SELECT NEW com.eventhive.bookings.BookingSummaryDTO(b.id, b.priceCents, b.status, b.user.id, b.event.id, b.seat.id)
             FROM Booking b
             WHERE b.user.id = ?1
                 """)
