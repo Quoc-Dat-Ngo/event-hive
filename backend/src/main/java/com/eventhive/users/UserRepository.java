@@ -15,4 +15,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findUserByEmail(String email);
 
     Page<User> findUserByFirstNameContainingIgnoreCase(String name, Pageable pageable);
+
+    int countByEmail(String email);
 }

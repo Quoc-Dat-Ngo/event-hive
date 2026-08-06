@@ -1,6 +1,5 @@
 package com.eventhive.entity;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,16 +69,6 @@ public class PaymentRepositoryTest extends AbstractRepositoryTest {
 				new User("Kevin", "Ngo", "quocdat@gmail", "dat124", AuthProvider.LOCAL, UserRole.USER));
 
 		booking = bookingRepository.save(new Booking(40000, BookingStatus.CONFIRMED, u, e, s));
-	}
-
-	@AfterEach
-	public void clearDatabase() {
-		paymentRepository.deleteAll();
-		bookingRepository.deleteAll();
-		seatRepository.deleteAll();
-		eventRepository.deleteAll();
-		userRepository.deleteAll();
-		venueRepository.deleteAll();
 	}
 
 	@Test

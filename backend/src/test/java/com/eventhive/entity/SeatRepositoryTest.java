@@ -1,6 +1,5 @@
 package com.eventhive.entity;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +34,6 @@ public class SeatRepositoryTest extends AbstractRepositoryTest {
         seatRepository.save(new Seat("B", 2, v));
         seatRepository.save(new Seat("C", 3, v));
         seatRepository.save(new Seat("D", 4, v));
-    }
-
-    @AfterEach
-    public void clearDatabase() {
-        seatRepository.deleteAll();
-        venueRepository.deleteAll();
     }
 
     @Test

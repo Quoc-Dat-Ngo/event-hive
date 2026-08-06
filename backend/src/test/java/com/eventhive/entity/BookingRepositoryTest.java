@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,16 +61,6 @@ public class BookingRepositoryTest extends AbstractRepositoryTest {
 
         u = userRepository.save(new User("Kevin", "Ngo", "quocdat@gmail", "dat124", AuthProvider.LOCAL, UserRole.USER));
 
-    }
-
-    @AfterEach
-    public void deleteDatabase() {
-        bookingRepository.deleteAll();
-        seatRepository.deleteAll();
-        eventRepository.deleteAll();
-        userRepository.deleteAll();
-        userRepository.deleteAll();
-        venueRepository.deleteAll();
     }
 
     @Test
