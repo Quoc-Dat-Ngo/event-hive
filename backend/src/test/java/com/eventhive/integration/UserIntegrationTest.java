@@ -168,6 +168,9 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
         startLatch.countDown();
 
         List<Integer> statuses = List.of(resultA.get(), resultB.get());
+
+        executor.shutdown();
+
         assertThat(statuses).containsExactlyInAnyOrder(201, 409);
         assertThat(userRepository.countByEmail("quocngo@gmail.com")).isEqualTo(1);
     }
