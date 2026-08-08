@@ -24,7 +24,8 @@ Actively in development — see roadmap below.
 - [x] Spring Boot scaffold + dependencies
 - [x] Postgres + Docker Compose (dev environment)
 - [x] Database schema migrations (Flyway)
-- [ ] Core CRUD REST API
+- [x] Core CRUD REST API
+- [x] Entity repository + integration tests
 - [ ] JWT authentication + RBAC
 - [ ] Redis-based seat locking
 - [ ] Stripe payment integration
