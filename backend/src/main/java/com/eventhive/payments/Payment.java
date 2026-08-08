@@ -48,6 +48,7 @@ public class Payment {
     @Column(nullable = false, length = 50)
     private PaymentStatus status;
 
+    @CreationTimestamp
     @Column(updatable = false)
     private Instant purchasedAt;
 

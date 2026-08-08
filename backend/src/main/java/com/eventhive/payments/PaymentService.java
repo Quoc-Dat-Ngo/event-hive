@@ -1,5 +1,6 @@
 package com.eventhive.payments;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eventhive.bookings.Booking;
 import com.eventhive.bookings.BookingRepository;
 import com.eventhive.bookings.BookingSummaryDTO;
+import com.eventhive.exception.RequestValidationException;
 import com.eventhive.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -46,15 +48,41 @@ public class PaymentService {
         Payment payment = paymentRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found " + id));
 
+        // 1. Process Status State Machine transitions securely
         if (rq.status() != null) {
-            payment.setStatus((rq.status()));
+            validateStateTransition(payment.getStatus(), rq.status());
+            payment.setStatus(rq.status());
         }
 
+        // 2. Enforce structural alignment for refunds
         if (rq.refundedAt() != null) {
+            if (payment.getStatus() != PaymentStatus.REFUNDED) {
+                throw new RequestValidationException("Cannot set a refund timestamp unless payment status is REFUNDED");
+            }
             payment.setRefundedAt(rq.refundedAt());
+        } else if (payment.getStatus() == PaymentStatus.REFUNDED && payment.getRefundedAt() == null) {
+            // Fallback: If status changed to REFUNDED but client omitted the time, set it
+            // to now
+            payment.setRefundedAt(Instant.now());
         }
 
         return mapper.apply(payment);
+    }
+
+    private void validateStateTransition(PaymentStatus current, PaymentStatus incoming) {
+        if (current == incoming) {
+            return; // No-op if it's the same state
+        }
+
+        // Block ANY mutations if the payment is already closed as REFUNDED
+        if (current == PaymentStatus.REFUNDED) {
+            throw new RequestValidationException("Archived payments cannot be changed from REFUNDED to " + incoming);
+        }
+
+        // Block transitions out of a terminal FAILED state
+        if (current == PaymentStatus.FAILED) {
+            throw new RequestValidationException("Cannot transition a failed payment to " + incoming);
+        }
     }
 
     public void removePayment(UUID id) {

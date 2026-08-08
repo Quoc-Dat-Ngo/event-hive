@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -26,11 +28,57 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleMethodValidation(HandlerMethodValidationException e,
+            HttpServletRequest request) {
+        // Extract the original RequestValidationException message if it's nested inside
+        String message = e.getReason();
+
+        // Look deeper into the validation causes if wrapped inside parameter errors
+        if (e.getCause() instanceof RequestValidationException validationEx) {
+            message = validationEx.getMessage();
+        }
+
+        ApiError apiError = new ApiError(
+                request.getRequestURI(),
+                message,
+                HttpStatus.BAD_REQUEST.value(),
+                LocalDateTime.now());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(RequestValidationException.class)
     public ResponseEntity<ApiError> handleException(RequestValidationException e, HttpServletRequest request) {
         ApiError apiError = new ApiError(
                 request.getRequestURI(),
                 e.getMessage(),
+                HttpStatus.BAD_REQUEST.value(),
+                LocalDateTime.now());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleHttpMessageNotReadable(HttpMessageNotReadableException e,
+            HttpServletRequest request) {
+        String message = "Malformed JSON request payload";
+        Throwable mostSpecificCause = e.getMostSpecificCause();
+
+        // Check if the root cause was your custom RequestValidationException
+        if (mostSpecificCause instanceof RequestValidationException validationEx) {
+            message = validationEx.getMessage();
+        } else if (mostSpecificCause != null) {
+            // Fallback: extract Jackson's cleaned-up inner problem description if available
+            String rawMessage = mostSpecificCause.getMessage();
+            if (rawMessage != null && rawMessage.contains("problem:")) {
+                message = rawMessage.substring(rawMessage.indexOf("problem:") + 8).trim();
+            }
+        }
+
+        ApiError apiError = new ApiError(
+                request.getRequestURI(),
+                message,
                 HttpStatus.BAD_REQUEST.value(),
                 LocalDateTime.now());
 

@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import com.eventhive.exception.RequestValidationException;
 
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -20,9 +19,9 @@ public record PaymentRegistrationRequest(
 
         @NotNull(message = "Payment status cannot be null") PaymentStatus status,
 
-        @FutureOrPresent(message = "Payment refund time must be in the future time or exactly now") Instant purchasedAt,
+        @NotNull(message = "Purchase timestamp is required") Instant purchasedAt,
 
-        @FutureOrPresent(message = "Payment refund time must be in the future time or exactly now") Instant refundedAt,
+        Instant refundedAt,
 
         @NotNull(message = "Each payment must correspond with exactly one booking   ") UUID bookingId) {
     public PaymentRegistrationRequest {
