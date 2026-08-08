@@ -2,11 +2,10 @@ package com.eventhive.payments;
 
 import java.time.Instant;
 
-import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.PastOrPresent;
 
 public record PaymentUpdateRequest(
-                PaymentStatus status,
+        PaymentStatus status,
 
-                @FutureOrPresent(message = "Payment refund time must be in the future time or exactly now") Instant refundedAt) {
-
+        @PastOrPresent(message = "Payment refund time cannot be a future date") Instant refundedAt) {
 }
