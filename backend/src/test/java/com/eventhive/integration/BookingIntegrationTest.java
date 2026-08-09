@@ -1,6 +1,7 @@
 package com.eventhive.integration;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -20,6 +21,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.eventhive.AbstractWebIntegrationTest;
+import com.eventhive.bookings.BookingRepository;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -30,6 +33,9 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     private String userId;
     private String seatId;
@@ -138,5 +144,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
         executorService.shutdown();
 
         assertThat(statuses).contains(201, 409);
+        assertThat(bookingRepository.findAllBookingsByEventId(UUID.fromString(eventId))).hasSize(1);
     }
 }
