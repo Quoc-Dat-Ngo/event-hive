@@ -89,7 +89,7 @@ public class PaymentRepositoryTest extends AbstractRepositoryTest {
 	}
 
 	@Test
-	public void shoulReturnAllAssociatedPayments() {
+	public void shouldReturnAllAssociatedPayments() {
 		Payment payment1 = paymentRepository
 				.save(new Payment("placeholder_id", 40000, "AUD", PaymentStatus.SUCCEEDED, booking));
 		Payment payment2 = paymentRepository

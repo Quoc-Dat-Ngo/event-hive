@@ -16,56 +16,86 @@ import tools.jackson.databind.ObjectMapper;
 
 @AutoConfigureMockMvc
 public class SeatIntegrationTest extends AbstractWebIntegrationTest {
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+	@Autowired
+	private ObjectMapper objectMapper;
 
-    @Test
-    void shouldReturnConflictStatusUponViolatingCompositeUniqueConstraint() throws Exception {
-        String newVenueJson = """
-                {
-                    "name": "CBD",
-                    "capacity": 10000,
-                    "location": "Parramata, Sydney"
-                }
-                """;
+	private String extractIdFromMockMvc(String uri, String json) throws Exception {
+		MvcResult result = mockMvc.perform(post(uri)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(json))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.id").exists())
+				.andReturn();
 
-        MvcResult result = mockMvc.perform(post("/api/v1/venues")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(newVenueJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value("CBD"))
-                .andExpect(jsonPath("$.capacity").value(10000))
-                .andExpect(jsonPath("$.location").value("Parramata, Sydney"))
-                .andReturn();
+		JsonNode rootNode = objectMapper.readTree(result.getResponse().getContentAsString());
+		return rootNode.get("id").asString();
+	}
 
-        String jsonResponse = result.getResponse().getContentAsString();
-        JsonNode rootNode = objectMapper.readTree(jsonResponse);
-        String venueId = rootNode.get("id").asString();
+	private String createVenue() throws Exception {
+		return extractIdFromMockMvc("/api/v1/venues", """
+				{
+				    "name": "CBD",
+				    "capacity": 10000,
+				    "location": "Parramata, Sydney"
+				}
+				""");
+	}
 
-        String newSeatJson = String.format("""
-                {
-                    "seatRow": "AB",
-                    "number": 2,
-                    "venueId": "%s"
-                }
-                """, venueId);
+	private String createSeat(String venueId) throws Exception {
+		return extractIdFromMockMvc("/api/v1/seats", String.format("""
+				{
+				    "seatRow": "AB",
+				    "number": 2,
+				    "venueId": "%s"
+				}
+				""", venueId));
+	}
 
-        mockMvc.perform(post("/api/v1/seats")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(newSeatJson))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists());
+	@Test
+	void shouldReturnConflictStatusUponViolatingCompositeUniqueConstraint() throws Exception {
+		String venueId = createVenue();
+		String newSeatJson = String.format("""
+				{
+				    "seatRow": "AB",
+				    "number": 2,
+				    "venueId": "%s"
+				}
+				""", venueId);
 
-        // Database-level composite unqique constraint (seat_row, number, venue_id)
-        mockMvc.perform(post("/api/v1/seats")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(newSeatJson))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.path").value("/api/v1/seats"))
-                .andExpect(jsonPath("$.statusCode").value(409));
-    }
+		mockMvc.perform(post("/api/v1/seats")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(newSeatJson))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.id").exists());
+
+		// Database-level composite unqique constraint (seat_row, number, venue_id)
+		mockMvc.perform(post("/api/v1/seats")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(newSeatJson))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.path").value("/api/v1/seats"))
+				.andExpect(jsonPath("$.statusCode").value(409));
+	}
+
+	@Test
+	void shouldStoreSeatRowAsUpperCaseInDb() throws Exception {
+		String venueId = createVenue();
+		String seatId = createSeat(venueId);
+
+		String updateSeatJson = """
+				{
+					"seatRow": "a"
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/seats/" + seatId)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateSeatJson))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.seatRow").value("A"));
+
+	}
 }
