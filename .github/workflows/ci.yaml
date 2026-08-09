@@ -21,7 +21,7 @@ jobs:
           cache: 'gradle'
 
       - name: Grant execute permission for gradlew on first run
-        run: chmod +x backend/gradlew
+        run: cd backend && chmod +x gradlew
 
       - name: Run tests
-        run: ./backend/gradlew test
+        run: cd backend && ./gradlew test
