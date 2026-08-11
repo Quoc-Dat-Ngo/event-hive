@@ -7,8 +7,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5333/eventhive_dev
-    username: kevinngo
-    password: password
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     
   flyway:
     enabled: true
@@ -23,3 +23,12 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+eventhive:
+  admin:
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  
