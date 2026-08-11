@@ -10,7 +10,6 @@ public record UserRegistrationRequest(
 		@NotBlank(message = "Last name cannot be blank") @Size(min = 3) String lastName,
 		@Email String email,
 		String password,
-		@NotNull(message = "Auth provider is required") AuthProvider authProvider,
-		@NotNull(message = "Role is required") UserRole role) {
+		@NotNull(message = "Auth provider is required") AuthProvider authProvider) {
 
 }

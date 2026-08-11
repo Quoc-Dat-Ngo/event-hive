@@ -52,7 +52,7 @@ public class UserService {
             passwordHash = passwordEncoder.encode(request.password());
         }
         User user = new User(request.firstName(), request.lastName(), request.email(), passwordHash,
-                request.authProvider(), request.role());
+                request.authProvider(), UserRole.USER);
 
         try {
             userRepository.saveAndFlush(user);
