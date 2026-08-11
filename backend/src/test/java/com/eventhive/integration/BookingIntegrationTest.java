@@ -1,5 +1,7 @@
 package com.eventhive.integration;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -76,20 +78,19 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "dat123",
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """);
         this.eventId = extractIdFromMockMvc("/api/v1/events", String.format("""
                         {
                             "title": "Euniverse",
                             "purpose": "Park Eun Bin fan meeting",
-                            "startsAt": "2026-08-10T14:30:00+10:00",
-                            "endsAt": "2026-09-10T14:30:00+10:00",
+                            "startsAt": "%s",
+                            "endsAt": "%s",
                             "status": "PUBLISHED",
                             "venueId": "%s"
                         }
-                """, venueId));
+                """, Instant.now().plus(1, ChronoUnit.DAYS), Instant.now().plus(2, ChronoUnit.DAYS), venueId));
     }
 
     @Test

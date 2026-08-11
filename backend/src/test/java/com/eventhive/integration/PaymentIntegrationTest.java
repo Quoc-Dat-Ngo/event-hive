@@ -65,8 +65,7 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "dat123",
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """);
     }

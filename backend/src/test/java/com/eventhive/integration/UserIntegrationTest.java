@@ -36,8 +36,7 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "dat123",
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """;
 
@@ -60,8 +59,7 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "duc123",
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """;
 
@@ -83,8 +81,7 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": null,
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """;
 
@@ -103,8 +100,7 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "duc123",
-                    "authProvider": "GOOGLE",
-                    "role": "USER"
+                    "authProvider": "GOOGLE"
                 }
                 """;
 
@@ -126,8 +122,7 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "duc123",
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """;
         String userBJson = """
@@ -136,8 +131,7 @@ public class UserIntegrationTest extends AbstractWebIntegrationTest {
                     "lastName": "Ngo",
                     "email": "quocngo@gmail.com",
                     "password": "duc123",
-                    "authProvider": "LOCAL",
-                    "role": "USER"
+                    "authProvider": "LOCAL"
                 }
                 """;
 
