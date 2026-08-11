@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -120,6 +121,18 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now());
 
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthenticationException(AuthenticationException e,
+            HttpServletRequest request) {
+        ApiError apiError = new ApiError(
+                request.getRequestURI(),
+                e.getMessage(), // Captures the exact reason (e.g., "Bad credentials", "User is disabled")
+                HttpStatus.UNAUTHORIZED.value(),
+                LocalDateTime.now());
+
+        return new ResponseEntity<>(apiError, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(Exception.class)
