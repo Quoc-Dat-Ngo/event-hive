@@ -6,7 +6,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.eventhive.users.User;
-import com.eventhive.users.UserPrincipal;
 import com.eventhive.users.UserRepository;
 
 import lombok.RequiredArgsConstructor;

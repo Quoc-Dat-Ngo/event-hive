@@ -38,7 +38,7 @@ public class AuthController {
     @ResponseStatus(code = HttpStatus.CREATED)
     public RegisterResponse register(
             @Valid @RequestBody UserRegistrationRequest request) {
-        userService.addUser(request);
+        userService.createStandardUser(request);
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 request.email(), request.password());
         Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);

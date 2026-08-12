@@ -42,7 +42,16 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User with id '" + id + "' not found"));
     }
 
-    public UserDTO addUser(UserRegistrationRequest request) {
+    public UserDTO createStandardUser(UserRegistrationRequest request) {
+        return createUser(request);
+
+    }
+
+    public UserDTO createAdminUser(AdminUserCreationRequest request) {
+        return createUser(request);
+    }
+
+    private UserDTO createUser(BaseUserRegistration request) {
         if (userRepository.existsUserByEmail(request.email())) {
             throw new DuplicateResourceException("Email already taken");
         }
@@ -52,7 +61,7 @@ public class UserService {
             passwordHash = passwordEncoder.encode(request.password());
         }
         User user = new User(request.firstName(), request.lastName(), request.email(), passwordHash,
-                request.authProvider(), UserRole.USER);
+                request.authProvider(), request.role());
 
         try {
             userRepository.saveAndFlush(user);
