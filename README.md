@@ -26,6 +26,7 @@ Actively in development — see roadmap below.
 - [x] Database schema migrations (Flyway)
 - [x] Core CRUD REST API
 - [x] Entity repository + integration tests
+- [x] Set up CI workflow (Github Actions)
 - [ ] JWT authentication + RBAC
 - [ ] Redis-based seat locking
 - [ ] Stripe payment integration

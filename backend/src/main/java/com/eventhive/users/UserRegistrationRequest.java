@@ -8,9 +8,13 @@ import jakarta.validation.constraints.Size;
 public record UserRegistrationRequest(
 		@NotBlank(message = "First name cannot be blank") @Size(min = 3) String firstName,
 		@NotBlank(message = "Last name cannot be blank") @Size(min = 3) String lastName,
-		@Email String email,
-		String password,
-		@NotNull(message = "Auth provider is required") AuthProvider authProvider,
-		@NotNull(message = "Role is required") UserRole role) {
+		@NotBlank(message = "Email is required") @Email String email,
+		@NotBlank(message = "Password is required") @Size(min = 3) String password,
+		@NotNull(message = "Auth provider is required") AuthProvider authProvider) implements BaseUserRegistration {
+
+	@Override
+	public UserRole role() {
+		return UserRole.USER;
+	}
 
 }

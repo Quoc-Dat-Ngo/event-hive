@@ -44,9 +44,9 @@ public class BookingService {
                 () -> new ResourceNotFoundException("Seat associted with this booking not found " + id));
     }
 
-    public BookingDTO addBooking(BookingRegistrationRequest rq) {
-        User user = userRepo.findById(rq.userId()).orElseThrow(
-                () -> new ResourceNotFoundException("User associted with this booking not found " + rq.userId()));
+    public BookingDTO addBooking(BookingRegistrationRequest rq, UUID verifiedUserId) {
+        User user = userRepo.findById(verifiedUserId).orElseThrow(
+                () -> new ResourceNotFoundException("User associted with this booking not found " + verifiedUserId));
         Event event = eventRepo.findById(rq.eventId()).orElseThrow(
                 () -> new ResourceNotFoundException("Event associted with this booking not found " + rq.eventId()));
         Seat seat = findSeat(rq.seatId());

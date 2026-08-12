@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +39,7 @@ public class EventController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'EVENT_ORGANISER')")
     @ResponseStatus(code = HttpStatus.CREATED)
     public EventDTO addNewEvent(
             @Valid @RequestBody EventRegistrationRequest request) {
@@ -45,6 +47,7 @@ public class EventController {
     }
 
     @PutMapping("/{eventId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EVENT_ORGANISER')")
     public EventDTO updateEvent(
             @PathVariable("eventId") UUID id,
             @Valid @RequestBody EventUpdateRequest request) {
@@ -52,6 +55,8 @@ public class EventController {
     }
 
     @DeleteMapping("/{eventId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EVENT_ORGANISER')")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteEvent(
             @PathVariable("eventId") UUID id) {
         eventService.removeEvent(id);
@@ -63,6 +68,7 @@ public class EventController {
     }
 
     @GetMapping("/{eventId}/bookings")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EVENT_ORGANISER')")
     public List<BookingSummaryDTO> getAllBookings(@PathVariable("eventId") UUID id) {
         return eventService.getBookings(id);
     }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +37,7 @@ public class VenueController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(code = HttpStatus.CREATED)
     public VenueDTO addNewVenue(
             @Valid @RequestBody VenueRegistrationRequest request) {
@@ -43,6 +45,7 @@ public class VenueController {
     }
 
     @PutMapping("/{venueId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public VenueDTO updateVenue(
             @PathVariable("venueId") UUID id,
             @Valid @RequestBody VenueUpdateRequest request) {
@@ -51,6 +54,8 @@ public class VenueController {
     }
 
     @DeleteMapping("/{venueId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteVenue(
             @PathVariable("venueId") UUID id) {
         service.removeVenue(id);
