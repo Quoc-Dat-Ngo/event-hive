@@ -48,4 +48,12 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             WHERE b.user.id = ?1
                 """)
     List<BookingSummaryDTO> findAllBookingsByUserId(UUID userId);
+
+    @Query("""
+            SELECT u.id
+            FROM Booking b
+            JOIN b.user u
+            WHERE b.id = ?1
+            """)
+    Optional<UUID> getUserId(UUID bookingId);
 }
