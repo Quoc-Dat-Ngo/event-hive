@@ -16,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -33,6 +34,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 
 import com.eventhive.exception.ApiError;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
@@ -41,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration
+@EnableMethodSecurity
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -57,6 +60,8 @@ public class SecurityConfig {
 						"/api/v*/auth/login",
 						"/api/v*/auth/register",
 						"/api/v*/auth/refresh-token")
+				.permitAll()
+				.requestMatchers(HttpMethod.POST, "/api/v*/users/registration")
 				.permitAll()
 				.requestMatchers("/api/v*/auth/logout").authenticated()
 
@@ -94,6 +99,11 @@ public class SecurityConfig {
 						oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
 				.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.headers(headers -> headers
+						.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
+						.xssProtection(xss -> xss.disable())
+						.frameOptions(frame -> frame.deny())
+						.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
 				.exceptionHandling(
 						exception -> exception.accessDeniedHandler(customAccessDeniedHandler())
 								.authenticationEntryPoint(customAuthenticationEntryPoint()))
@@ -174,7 +184,7 @@ public class SecurityConfig {
 			ApiError apiError = new ApiError(
 					request.getRequestURI(),
 					accessDeniedException.getMessage(),
-					401,
+					403,
 					LocalDateTime.now());
 
 			response.getWriter().write(objectMapper.writeValueAsString(apiError));

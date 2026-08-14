@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.eventhive.bookings.BookingSummaryDTO;
 
 import jakarta.validation.Valid;
@@ -47,12 +46,12 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
-    public UserDTO getUser(@PathVariable("userId") UUID userId) {
-        return userService.getUserById(userId);
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication.token.claims['userId'])")
+    public UserDTO getUser(@PathVariable("userId") UUID id) {
+        return userService.getUserById(id);
     }
 
-    @PostMapping
+    @PostMapping("/registration")
     @ResponseStatus(value = HttpStatus.CREATED)
     public UserDTO registerNewUser(
             @Valid @RequestBody UserRegistrationRequest request) {
@@ -67,14 +66,12 @@ public class UserController {
         return userService.createAdminUser(request);
     }
 
-    @PostMapping
-
     @PutMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication.token.claims['userId'])")
     public UserDTO updateUser(
-            @PathVariable("userId") UUID userId,
+            @PathVariable("userId") UUID id,
             @Valid @RequestBody UserUpdateRequest request) {
-        return userService.updateUser(userId, request);
+        return userService.updateUser(id, request);
     }
 
     @DeleteMapping("/{userId}")
@@ -86,7 +83,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/bookings")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isSelf(#id, authentication.token.claims['userId'])")
     public List<BookingSummaryDTO> getAllBookings(@PathVariable("userId") UUID id) {
         return userService.getBookings(id);
     }

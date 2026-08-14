@@ -1,6 +1,9 @@
 package com.eventhive.auth;
 
+import com.eventhive.users.UserDTO;
+
 public record RegisterResponse(
-        String token) {
+		String token,
+		UserDTO user) {
 
 }

@@ -12,6 +12,8 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
+import com.eventhive.security.UserPrincipal;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -32,6 +34,7 @@ public class JwtTokenService {
                 .issuedAt(now)
                 .expiresAt(now.plus(15, ChronoUnit.MINUTES))
                 .subject(authentication.getName())
+                .claim("userId", ((UserPrincipal) authentication.getPrincipal()).getId().toString())
                 .claim("roles", roles)
                 .build();
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();

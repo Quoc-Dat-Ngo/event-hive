@@ -33,14 +33,14 @@ public class PaymentController {
     }
 
     @GetMapping("/{paymentId}")
-    @PreAuthorize("hasRole('ADMIN') or @paymentSecurity.isOwner(#id, authentication.principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or @paymentSecurity.isOwner(#id, authentication.token.claims['userId'])")
     public PaymentDTO getPayment(
             @PathVariable("paymentId") UUID id) {
         return service.getPayment(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or @paymentSecurity.isOwner(#request.bookingId(), authentication.principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or @bookingSecurity.isOwner(#request.bookingId(), authentication.token.claims['userId'])")
     public PaymentDTO addPayment(
             @Valid @RequestBody PaymentRegistrationRequest request) {
         return service.addPayment(request);
@@ -63,7 +63,7 @@ public class PaymentController {
     }
 
     @GetMapping("/{paymentId}/booking")
-    @PreAuthorize("hasRole('ADMIN') or @paymentSecurity.isOwner(#id, authentication.principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or @paymentSecurity.isOwner(#id, authentication.token.claims['userId'])")
     public BookingSummaryDTO getBooking(
             @PathVariable("paymentId") UUID id) {
         return service.getBooking(id);

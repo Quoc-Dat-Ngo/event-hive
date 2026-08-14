@@ -4,11 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import com.eventhive.AbstractWebIntegrationTest;
 import tools.jackson.databind.JsonNode;
@@ -24,6 +27,7 @@ public class SeatIntegrationTest extends AbstractWebIntegrationTest {
 
 	private String extractIdFromMockMvc(String uri, String json) throws Exception {
 		MvcResult result = mockMvc.perform(post(uri)
+				.with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 				.andExpect(status().isCreated())
@@ -55,6 +59,61 @@ public class SeatIntegrationTest extends AbstractWebIntegrationTest {
 	}
 
 	@Test
+	void shouldRequireAuthenticationWhenCreatingSeat() throws Exception {
+		String venueId = createVenue();
+		String newSeatJson = String.format("""
+				{
+				    "seatRow": "AB",
+				    "number": 2,
+				    "venueId": "%s"
+				}
+				""", venueId);
+
+		mockMvc.perform(post("/api/v1/seats")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(newSeatJson))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void shouldReturnForbiddenWhenRegularUserCreatesSeat() throws Exception {
+		String venueId = createVenue();
+		String newSeatJson = String.format("""
+				{
+				    "seatRow": "AB",
+				    "number": 2,
+				    "venueId": "%s"
+				}
+				""", venueId);
+
+		mockMvc.perform(post("/api/v1/seats")
+				.with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER")))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(newSeatJson))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void shouldAllowAdminToCreateSeat() throws Exception {
+		String venueId = createVenue();
+		String newSeatJson = String.format("""
+				{
+				    "seatRow": "AB",
+				    "number": 2,
+				    "venueId": "%s"
+				}
+				""", venueId);
+
+		mockMvc.perform(post("/api/v1/seats")
+				.with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(newSeatJson))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.id").exists());
+	}
+
+	@Test
+	@WithMockUser(roles = "ADMIN")
 	void shouldReturnConflictStatusUponViolatingCompositeUniqueConstraint() throws Exception {
 		String venueId = createVenue();
 		String newSeatJson = String.format("""
@@ -81,6 +140,7 @@ public class SeatIntegrationTest extends AbstractWebIntegrationTest {
 	}
 
 	@Test
+	@WithMockUser(roles = "ADMIN")
 	void shouldStoreSeatRowAsUpperCaseInDb() throws Exception {
 		String venueId = createVenue();
 		String seatId = createSeat(venueId);
