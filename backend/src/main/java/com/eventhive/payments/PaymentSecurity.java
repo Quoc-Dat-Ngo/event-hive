@@ -11,9 +11,11 @@ import lombok.RequiredArgsConstructor;
 public class PaymentSecurity {
     private final PaymentRepository paymentRepository;
 
-    public boolean isOwner(UUID paymentId, UUID principalId) {
-        return paymentRepository.getBookingUserId(paymentId)
+    public boolean isOwner(UUID paymentId, String principalIdString) {
+        UUID principalId = UUID.fromString(principalIdString);
+        var result = paymentRepository.getBookingUserId(paymentId)
                 .map(id -> id.equals(principalId))
                 .orElse(false);
+        return result;
     }
 }
