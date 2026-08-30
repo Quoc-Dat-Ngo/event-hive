@@ -64,6 +64,7 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/v*/users/registration")
 				.permitAll()
 				.requestMatchers("/api/v*/auth/logout").authenticated()
+				.requestMatchers("/api/v*/auth/logout-all").authenticated()
 
 				// ROLE_USER
 				// Readable by any authenticated user

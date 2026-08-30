@@ -1,5 +1,6 @@
 package com.eventhive.auth;
 
 public record LoginResponse(
-        String token) {
+		String accessToken,
+		String refreshToken) {
 }
