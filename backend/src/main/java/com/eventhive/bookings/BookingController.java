@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eventhive.exception.RequestValidationException;
 import com.eventhive.payments.PaymentSummaryDTO;
-import com.eventhive.security.UserPrincipal;
 import com.eventhive.venues.EventSummaryDTO;
 import com.eventhive.venues.SeatSummaryDTO;
 
