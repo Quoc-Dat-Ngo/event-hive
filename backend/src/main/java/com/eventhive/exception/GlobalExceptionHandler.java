@@ -185,6 +185,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(SeatAlreadyLockedException.class)
+    public ResponseEntity<ApiError> handleSeatAlreadyLockedException(SeatAlreadyLockedException e,
+            HttpServletRequest request) {
+        ApiError apiError = new ApiError(
+                request.getRequestURI(),
+                e.getMessage(),
+                HttpStatus.CONFLICT.value(),
+                LocalDateTime.now());
+
+        return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleException(Exception e, HttpServletRequest request) {
         ApiError apiError = new ApiError(
