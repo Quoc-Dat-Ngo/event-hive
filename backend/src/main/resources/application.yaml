@@ -4,16 +4,13 @@ server:
 spring:
   application:
     name: eventhive
-
   datasource:
     url: jdbc:postgresql://localhost:5333/eventhive_dev
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    
   flyway:
     enabled: true
     repair: true
-  
   jpa:
     hibernate:
         ddl-auto: validate
@@ -23,7 +20,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
+  data:
+    redis:
+      host: localhost
+      port: 6377
+      
 eventhive:
   admin:
     email: ${ADMIN_EMAIL}

@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.eventhive.events.Event;
 import com.eventhive.events.EventRepository;
 import com.eventhive.exception.ResourceNotFoundException;
+import com.eventhive.exception.SeatAlreadyLockedException;
 import com.eventhive.payments.PaymentRepository;
 import com.eventhive.payments.PaymentSummaryDTO;
+import com.eventhive.redis.SeatLockService;
 import com.eventhive.seats.Seat;
 import com.eventhive.seats.SeatRepository;
 import com.eventhive.users.User;
@@ -29,6 +31,7 @@ public class BookingService {
     private final SeatRepository seatRepo;
     private final PaymentRepository paymentRepo;
     private final BookingDTOMapper mapper;
+    private final SeatLockService seatLockService;
 
     public List<BookingDTO> getBookings() {
         return repo.findAll().stream().map(mapper).toList();
@@ -51,11 +54,25 @@ public class BookingService {
                 () -> new ResourceNotFoundException("Event associted with this booking not found " + rq.eventId()));
         Seat seat = findSeat(rq.seatId());
 
-        Booking booking = new Booking(rq.priceCents(), rq.status(), user, event, seat);
+        if (!seatLockService.tryLock(rq.seatId(), verifiedUserId)) {
+            throw new SeatAlreadyLockedException("Seat is currently reserved by another customer " + rq.seatId());
+        }
 
-        repo.save(booking);
+        try {
+            Booking booking = new Booking(
+                    rq.priceCents(),
+                    rq.status(),
+                    user,
+                    event,
+                    seat);
 
-        return mapper.apply(booking);
+            repo.save(booking);
+
+            return mapper.apply(booking);
+        } catch (RuntimeException ex) {
+            seatLockService.realeaseLock(rq.seatId(), verifiedUserId);
+            throw ex;
+        }
     }
 
     @Transactional

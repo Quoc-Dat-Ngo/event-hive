@@ -27,8 +27,8 @@ Actively in development — see roadmap below.
 - [x] Core CRUD REST API
 - [x] Entity repository + integration tests
 - [x] Set up CI workflow (Github Actions)
-- [ ] JWT authentication + RBAC
-- [ ] Redis-based seat locking
+- [x] JWT authentication + RBAC
+- [x] Redis-based seat locking
 - [ ] Stripe payment integration
 - [ ] Kafka async notifications
 - [ ] OAuth2 login

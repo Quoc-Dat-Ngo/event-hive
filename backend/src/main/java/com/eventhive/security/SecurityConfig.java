@@ -59,7 +59,8 @@ public class SecurityConfig {
 				.requestMatchers(
 						"/api/v*/auth/login",
 						"/api/v*/auth/register",
-						"/api/v*/auth/refresh-token")
+						"/api/v*/auth/refresh-token",
+						"/api/v*/redis-example")
 				.permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/v*/users/registration")
 				.permitAll()

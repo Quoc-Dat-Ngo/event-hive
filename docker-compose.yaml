@@ -21,9 +21,21 @@ services:
       timeout: 5s
       retries: 5
 
+  eventhive-redis:
+    container_name: eventhive-dev-redis
+    image: redis:7-alpine
+    ports:
+      - "6377:6379"
+    volumes:
+      - eventhive_redisdata:/data
+    networks:
+      - db
+    restart: unless-stopped
+
 networks:
   db:
     driver: bridge
 
 volumes:
   eventhive_pgdata: 
+  eventhive_redisdata:
