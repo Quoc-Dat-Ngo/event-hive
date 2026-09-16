@@ -1,0 +1,2 @@
+ALTER TABLE payments
+ALTER COLUMN amount_cents TYPE BIGINT;
