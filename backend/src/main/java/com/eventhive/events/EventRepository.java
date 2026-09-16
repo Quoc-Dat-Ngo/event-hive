@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import com.eventhive.venues.EventSummaryDTO;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
+    boolean existsByVenue_Id(UUID venueId);
+
     @Query("""
             SELECT NEW com.eventhive.events.VenueSummaryDTO(v.name, v.location, v.capacity)
             FROM Event e
