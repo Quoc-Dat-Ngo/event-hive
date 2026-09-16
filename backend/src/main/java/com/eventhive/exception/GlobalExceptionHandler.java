@@ -11,6 +11,9 @@ import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+
+import com.stripe.exception.SignatureVerificationException;
+
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,190 +24,237 @@ import jakarta.servlet.http.HttpServletRequest;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiError> handleException(ResourceNotFoundException e, HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.NOT_FOUND.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<ApiError> handleException(ResourceNotFoundException e, HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.NOT_FOUND.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.NOT_FOUND);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.NOT_FOUND);
+	}
 
-    @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ApiError> handleMethodValidation(HandlerMethodValidationException e,
-            HttpServletRequest request) {
-        // Extract the original RequestValidationException message if it's nested inside
-        String message = e.getReason();
+	@ExceptionHandler(HandlerMethodValidationException.class)
+	public ResponseEntity<ApiError> handleMethodValidation(HandlerMethodValidationException e,
+			HttpServletRequest request) {
+		// Extract the original RequestValidationException message if it's nested inside
+		String message = e.getReason();
 
-        // Look deeper into the validation causes if wrapped inside parameter errors
-        if (e.getCause() instanceof RequestValidationException validationEx) {
-            message = validationEx.getMessage();
-        }
+		// Look deeper into the validation causes if wrapped inside parameter errors
+		if (e.getCause() instanceof RequestValidationException validationEx) {
+			message = validationEx.getMessage();
+		}
 
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                message,
-                HttpStatus.BAD_REQUEST.value(),
-                LocalDateTime.now());
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				message,
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
 
-    @ExceptionHandler(RequestValidationException.class)
-    public ResponseEntity<ApiError> handleException(RequestValidationException e, HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.BAD_REQUEST.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(RequestValidationException.class)
+	public ResponseEntity<ApiError> handleException(RequestValidationException e, HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiError> handleHttpMessageNotReadable(HttpMessageNotReadableException e,
-            HttpServletRequest request) {
-        String message = "Malformed JSON request payload";
-        Throwable mostSpecificCause = e.getMostSpecificCause();
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ApiError> handleHttpMessageNotReadable(HttpMessageNotReadableException e,
+			HttpServletRequest request) {
+		String message = "Malformed JSON request payload";
+		Throwable mostSpecificCause = e.getMostSpecificCause();
 
-        // Check if the root cause was your custom RequestValidationException
-        if (mostSpecificCause instanceof RequestValidationException validationEx) {
-            message = validationEx.getMessage();
-        } else if (mostSpecificCause != null) {
-            // Fallback: extract Jackson's cleaned-up inner problem description if available
-            String rawMessage = mostSpecificCause.getMessage();
-            if (rawMessage != null && rawMessage.contains("problem:")) {
-                message = rawMessage.substring(rawMessage.indexOf("problem:") + 8).trim();
-            }
-        }
+		// Check if the root cause was your custom RequestValidationException
+		if (mostSpecificCause instanceof RequestValidationException validationEx) {
+			message = validationEx.getMessage();
+		} else if (mostSpecificCause != null) {
+			// Fallback: extract Jackson's cleaned-up inner problem description if available
+			String rawMessage = mostSpecificCause.getMessage();
+			if (rawMessage != null && rawMessage.contains("problem:")) {
+				message = rawMessage.substring(rawMessage.indexOf("problem:") + 8).trim();
+			}
+		}
 
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                message,
-                HttpStatus.BAD_REQUEST.value(),
-                LocalDateTime.now());
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				message,
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiError> handleException(DuplicateResourceException e, HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.CONFLICT.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(DuplicateResourceException.class)
+	public ResponseEntity<ApiError> handleException(DuplicateResourceException e, HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.CONFLICT.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
+	}
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiError> handleException(DataIntegrityViolationException e, HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                "A data conflict occured",
-                HttpStatus.CONFLICT.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ApiError> handleException(DataIntegrityViolationException e, HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				"A data conflict occured",
+				HttpStatus.CONFLICT.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
+	}
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleException(MethodArgumentNotValidException e, HttpServletRequest request) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-                .collect(Collectors.joining("; "));
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ApiError> handleException(MethodArgumentNotValidException e, HttpServletRequest request) {
+		String message = e.getBindingResult().getFieldErrors().stream()
+				.map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+				.collect(Collectors.joining("; "));
 
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                message,
-                HttpStatus.BAD_REQUEST.value(),
-                LocalDateTime.now());
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				message,
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiError> handleAuthenticationException(AuthenticationException e,
-            HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.UNAUTHORIZED.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<ApiError> handleAuthenticationException(AuthenticationException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.UNAUTHORIZED.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.UNAUTHORIZED);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.UNAUTHORIZED);
+	}
 
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.FORBIDDEN.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ApiError> handleAccessDeniedException(AccessDeniedException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.FORBIDDEN.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.FORBIDDEN);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.FORBIDDEN);
+	}
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiError> handleIllegalArgumentException(IllegalArgumentException e,
-            HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.BAD_REQUEST.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ApiError> handleIllegalArgumentException(IllegalArgumentException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiError> handleBadCredentialsException(BadCredentialsException e,
-            HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.UNAUTHORIZED.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(BadCredentialsException.class)
+	public ResponseEntity<ApiError> handleBadCredentialsException(BadCredentialsException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.UNAUTHORIZED.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.UNAUTHORIZED);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.UNAUTHORIZED);
+	}
 
-    @ExceptionHandler(MissingRequestCookieException.class)
-    public ResponseEntity<ApiError> handleMissingRequestCookieException(MissingRequestCookieException e,
-            HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.BAD_REQUEST.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(MissingRequestCookieException.class)
+	public ResponseEntity<ApiError> handleMissingRequestCookieException(MissingRequestCookieException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
 
-    @ExceptionHandler(SeatAlreadyLockedException.class)
-    public ResponseEntity<ApiError> handleSeatAlreadyLockedException(SeatAlreadyLockedException e,
-            HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.CONFLICT.value(),
-                LocalDateTime.now());
+	@ExceptionHandler(SeatAlreadyLockedException.class)
+	public ResponseEntity<ApiError> handleSeatAlreadyLockedException(SeatAlreadyLockedException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.CONFLICT.value(),
+				LocalDateTime.now());
 
-        return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
-    }
+		return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
+	}
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleException(Exception e, HttpServletRequest request) {
-        ApiError apiError = new ApiError(
-                request.getRequestURI(),
-                e.getMessage(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                LocalDateTime.now());
-        return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+	@ExceptionHandler(PaymentRequiredException.class)
+	public ResponseEntity<ApiError> handlePaymentRequiredException(PaymentRequiredException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.PAYMENT_REQUIRED.value(),
+				LocalDateTime.now());
+
+		return new ResponseEntity<>(apiError, HttpStatus.PAYMENT_REQUIRED);
+	}
+
+	@ExceptionHandler(PaymentProcessingException.class)
+	public ResponseEntity<ApiError> handlePaymentProcessingException(PaymentProcessingException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.BAD_GATEWAY.value(),
+				LocalDateTime.now());
+
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_GATEWAY);
+	}
+
+	@ExceptionHandler(SignatureVerificationException.class)
+	public ResponseEntity<ApiError> handleSignatureVerificationException(SignatureVerificationException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.BAD_REQUEST.value(),
+				LocalDateTime.now());
+		return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+	}
+
+	@ExceptionHandler(IllegalStateTransitionException.class)
+	public ResponseEntity<ApiError> handleIllegalStateTransitionException(IllegalStateTransitionException e,
+			HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.CONFLICT.value(),
+				LocalDateTime.now());
+		return new ResponseEntity<>(apiError, HttpStatus.CONFLICT);
+	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ApiError> handleException(Exception e, HttpServletRequest request) {
+		ApiError apiError = new ApiError(
+				request.getRequestURI(),
+				e.getMessage(),
+				HttpStatus.INTERNAL_SERVER_ERROR.value(),
+				LocalDateTime.now());
+		return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 
 }
