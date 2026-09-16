@@ -53,6 +53,7 @@ dependencies {
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
 
 	testImplementation 'org.springframework.security:spring-security-test'
+	implementation "com.stripe:stripe-java:33.4.2"
 }
 
 tasks.named('test') {
