@@ -16,8 +16,8 @@ import lombok.RequiredArgsConstructor;
 public class SeatLockService {
     private final RedisTemplate<String, String> redisTemplate;
 
-    public boolean tryLock(UUID seatId, UUID userId) {
-        String key = "seat-lock:" + seatId.toString();
+    public boolean tryLock(UUID seatId, UUID eventId, UUID userId) {
+        String key = "seat-lock:" + eventId.toString() + ":" + seatId.toString();
         String value = userId.toString();
 
         Boolean acquired = redisTemplate.opsForValue().setIfAbsent(key, value, Duration.ofMinutes(5));
@@ -25,8 +25,8 @@ public class SeatLockService {
         return Boolean.TRUE.equals(acquired);
     }
 
-    public boolean realeaseLock(UUID seatId, UUID userId) {
-        String key = "seat-lock:" + seatId.toString();
+    public boolean releaseLock(UUID seatId, UUID eventId, UUID userId) {
+        String key = "seat-lock:" + eventId.toString() + ":" + seatId.toString();
         String expectedValue = userId.toString();
 
         DefaultRedisScript<Long> script = new DefaultRedisScript<>();
