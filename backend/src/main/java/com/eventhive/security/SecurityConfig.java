@@ -60,7 +60,11 @@ public class SecurityConfig {
 						"/api/v*/auth/login",
 						"/api/v*/auth/register",
 						"/api/v*/auth/refresh-token",
-						"/api/v*/redis-example")
+						"/api/v*/redis-example",
+						"/api/v*/stripe/webhooks")
+				.permitAll()
+				// Static test pages (checkout test page, Stripe success/cancel redirects)
+				.requestMatchers(HttpMethod.GET, "/", "/*.html", "/*.js", "/*.css", "/*.png")
 				.permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/v*/users/registration")
 				.permitAll()
@@ -83,8 +87,7 @@ public class SecurityConfig {
 				// later)
 				.requestMatchers(
 						HttpMethod.POST,
-						"/api/v*/bookings/**",
-						"/api/v*/payments/**")
+						"/api/v*/bookings/**")
 				.authenticated()
 				.requestMatchers(HttpMethod.PUT, "/api/v*/users/**").authenticated()
 
