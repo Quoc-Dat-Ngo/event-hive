@@ -7,9 +7,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.eventhive.bookings.Booking;
-import com.eventhive.bookings.BookingRepository;
 import com.eventhive.bookings.BookingSummaryDTO;
+import com.eventhive.exception.IllegalStateTransitionException;
 import com.eventhive.exception.RequestValidationException;
 import com.eventhive.exception.ResourceNotFoundException;
 
@@ -19,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PaymentService {
     private final PaymentRepository paymentRepo;
-    private final BookingRepository bookingRepo;
     private final PaymentDTOMapper mapper;
 
     public List<PaymentDTO> getPayments() {
@@ -29,18 +27,6 @@ public class PaymentService {
     public PaymentDTO getPayment(UUID id) {
         return paymentRepo.findById(id).map(mapper)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found " + id));
-    }
-
-    public PaymentDTO addPayment(PaymentRegistrationRequest rq) {
-        Booking booking = bookingRepo.findById(rq.bookingId()).orElseThrow(() -> new ResourceNotFoundException(
-                "Booking associated with this payment not found " + rq.bookingId()));
-
-        Payment payment = new Payment(rq.stripePaymentIntentId(), rq.amountCents(), rq.currency(), rq.status(),
-                booking);
-
-        paymentRepo.save(payment);
-
-        return mapper.apply(payment);
     }
 
     @Transactional
@@ -76,19 +62,14 @@ public class PaymentService {
 
         // Block ANY mutations if the payment is already closed as REFUNDED
         if (current == PaymentStatus.REFUNDED) {
-            throw new RequestValidationException("Archived payments cannot be changed from REFUNDED to " + incoming);
+            throw new IllegalStateTransitionException(
+                    "Archived payments cannot be changed from REFUNDED to " + incoming);
         }
 
         // Block transitions out of a terminal FAILED state
         if (current == PaymentStatus.FAILED) {
-            throw new RequestValidationException("Cannot transition a failed payment to " + incoming);
+            throw new IllegalStateTransitionException("Cannot transition a failed payment to " + incoming);
         }
-    }
-
-    public void removePayment(UUID id) {
-        Payment payment = paymentRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found " + id));
-        paymentRepo.delete(payment);
     }
 
     public BookingSummaryDTO getBooking(UUID paymentId) {

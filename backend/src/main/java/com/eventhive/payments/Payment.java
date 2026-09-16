@@ -17,15 +17,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", uniqueConstraints = {
+        @UniqueConstraint(name = "unique_stripe_payment_intent_id", columnNames = "stripe_payment_intent_id")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -39,7 +42,7 @@ public class Payment {
     private String stripePaymentIntentId;
 
     @Column(nullable = false)
-    private Integer amountCents;
+    private Long amountCents;
 
     @Column(nullable = false, length = 3)
     private String currency;
@@ -61,11 +64,11 @@ public class Payment {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
-    public Payment(String stripePaymentIntentId, Integer amountCents, String currency, PaymentStatus status,
+    public Payment(String stripePaymentIntentId, Long amountCents, String currency, PaymentStatus status,
             Booking booking) {
         this.stripePaymentIntentId = stripePaymentIntentId;
         this.amountCents = amountCents;
