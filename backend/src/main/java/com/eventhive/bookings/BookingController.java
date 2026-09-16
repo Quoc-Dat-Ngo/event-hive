@@ -46,7 +46,7 @@ public class BookingController {
 
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
-    public BookingDTO addBooking(
+    public BookingRegistrationResponse addBooking(
             @Valid @RequestBody BookingRegistrationRequest rq,
             @AuthenticationPrincipal Jwt jwt) {
         String claimId = jwt.getClaimAsString("userId");
@@ -60,7 +60,7 @@ public class BookingController {
     }
 
     @PutMapping("/{bookingId}")
-    @PreAuthorize("hasRole('ADMIN') or @bookingSecurity.isOwner(#id, authentication.token.claims['userId'])")
+    @PreAuthorize("hasRole('ADMIN')")
     public BookingDTO updateBooking(
             @PathVariable("bookingId") UUID id,
             @Valid @RequestBody BookingUpdateRequest rq) {
@@ -68,7 +68,7 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    @PreAuthorize("hasRole('ADMIN') or @bookingSecurity.isOwner(#id, authentication.token.claims['userId'])")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteBooking(
             @PathVariable("bookingId") UUID id) {
@@ -98,8 +98,8 @@ public class BookingController {
 
     @GetMapping("/{bookingId}/payments")
     @PreAuthorize("hasRole('ADMIN') or @bookingSecurity.isOwner(#id, authentication.token.claims['userId'])")
-    public List<PaymentSummaryDTO> getAllPayments(
+    public PaymentSummaryDTO getAllPayments(
             @PathVariable("bookingId") UUID id) {
-        return service.getAllPayments(id);
+        return service.getPayment(id);
     }
 }
