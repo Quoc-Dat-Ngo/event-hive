@@ -119,7 +119,6 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		return extractIdFromMockMvcWithJwtClaim("/api/v1/bookings", String.format("""
 				{
 				    "priceCents": 20000,
-				    "status": "PENDING",
 				    "eventId": "%s",
 				    "seatId": "%s"
 				}

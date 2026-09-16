@@ -110,7 +110,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -141,7 +140,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -171,7 +169,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -202,7 +199,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingAJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -211,7 +207,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingBJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -265,7 +260,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingAJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -274,7 +268,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingBJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
@@ -334,7 +327,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingAJson = String.format("""
 						{
 							"priceCents": 20000,
-							"status": "PENDING",
 							"eventId": "%s",
 							"seatId": "%s"
 						}
@@ -354,7 +346,6 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 		String bookingBJson = String.format("""
 				        {
 				            "priceCents": 20000,
-				            "status": "PENDING",
 				            "eventId": "%s",
 				            "seatId": "%s"
 				        }
