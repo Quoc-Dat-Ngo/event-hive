@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EventHive Checkout Test</title>
+    <!-- CSP is default-src 'self', so styles and scripts must be external files -->
+    <link rel="stylesheet" href="/checkout-test.css" />
+    <script src="/checkout-test.js" defer></script>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Stripe Checkout Test</h1>
+
+      <section>
+        <h2>1. Log in</h2>
+        <form id="login-form">
+          <label>
+            Username (email)
+            <input name="username" type="email" autocomplete="username" required />
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">Log in</button>
+        </form>
+        <p id="login-status" class="status"></p>
+      </section>
+
+      <section>
+        <h2>2. Create booking</h2>
+        <form id="booking-form">
+          <label>
+            Price (cents)
+            <input name="priceCents" type="number" min="50" step="1" value="2000" required />
+          </label>
+          <label>
+            Event ID
+            <input name="eventId" type="text" placeholder="UUID" required />
+          </label>
+          <label>
+            Seat ID
+            <input name="seatId" type="text" placeholder="UUID" required />
+          </label>
+          <button type="submit" id="booking-submit" disabled>Book &amp; go to checkout</button>
+        </form>
+        <p id="booking-status" class="status"></p>
+      </section>
+
+      <pre id="output" hidden></pre>
+    </main>
+  </body>
+</html>
