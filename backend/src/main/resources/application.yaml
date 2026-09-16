@@ -29,7 +29,15 @@ eventhive:
   admin:
     email: ${ADMIN_EMAIL}
     password: ${ADMIN_PASSWORD}
+  seed:
+    enabled: true
 
 jwt:
   secret: ${JWT_SECRET_KEY}
+
+stripe:
+  secret: ${STRIPE_SECRET_KEY}
+  public: ${STRIPE_PUBLISH_KEY}
+  webhook:
+    signing: ${STRIPE_SIGNING_KEY}
   
