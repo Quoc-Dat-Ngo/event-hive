@@ -154,6 +154,9 @@ public class BookingService {
             } else {
                 // Initiate refund
                 stripeService.initiateRefund(bookingId, session);
+                Payment paymentObject = paymentRepo.findById(payment.id()).get();
+                paymentObject.setStatus(PaymentStatus.REFUNDED);
+                paymentRepo.save(paymentObject);
             }
 
         } else { // Assumption: must be BookingStatus.PENDING
