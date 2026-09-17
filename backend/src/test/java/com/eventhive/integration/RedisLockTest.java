@@ -30,8 +30,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import com.eventhive.stripe.StripeHostedCheckoutService;
+import com.stripe.model.checkout.Session;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -56,6 +63,9 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
     @Autowired
     private SeatLockService seatLockService;
 
+    @MockitoBean
+    private StripeHostedCheckoutService checkoutService;
+
     private User user;
     private String seatId;
     private String eventId;
@@ -76,6 +86,12 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
 
     @BeforeEach
     void setupData() throws Exception {
+        Session fakeSession = new Session();
+        fakeSession.setId("cs_test_" + UUID.randomUUID());
+        fakeSession.setUrl("https://checkout.stripe.com/c/pay/cs_test_mock");
+        fakeSession.setPaymentIntent("pi_test_" + UUID.randomUUID());
+        when(checkoutService.checkout(any())).thenReturn(fakeSession);
+
         this.venueId = extractIdFromMockMvc("/api/v1/venues", """
                 {
                     "name": "CBD",
@@ -123,12 +139,12 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookingJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.priceCents").exists())
-                .andExpect(jsonPath("$.status").exists())
-                .andExpect(jsonPath("$.userId").exists())
-                .andExpect(jsonPath("$.eventId").exists())
-                .andExpect(jsonPath("$.seatId").exists());
+                .andExpect(jsonPath("$.booking.id").exists())
+                .andExpect(jsonPath("$.booking.priceCents").exists())
+                .andExpect(jsonPath("$.booking.status").exists())
+                .andExpect(jsonPath("$.booking.userId").exists())
+                .andExpect(jsonPath("$.booking.eventId").exists())
+                .andExpect(jsonPath("$.booking.seatId").exists());
 
         Long expireTimeSeconds = redisTemplate.getExpire("seat-lock:" + eventId + ":" + seatId, TimeUnit.SECONDS);
 
