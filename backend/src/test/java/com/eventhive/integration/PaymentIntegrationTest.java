@@ -6,28 +6,41 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import com.eventhive.AbstractWebIntegrationTest;
+import com.eventhive.stripe.StripeHostedCheckoutService;
 import com.eventhive.users.AuthProvider;
 import com.eventhive.users.User;
 import com.eventhive.users.UserRepository;
 import com.eventhive.users.UserRole;
+import com.stripe.Stripe;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Payments are no longer created by a client-facing endpoint (see commit 3bc4059);
+ * they're created as a side effect of a Stripe {@code checkout.session.completed}
+ * webhook. These tests drive that flow by POSTing a signed webhook payload, the same
+ * way Stripe would, rather than calling a (now removed) POST /api/v1/payments.
+ */
 @AutoConfigureMockMvc
 public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 	@Autowired
@@ -42,6 +55,12 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@MockitoBean
+	private StripeHostedCheckoutService checkoutService;
+
+	@Value("${stripe.webhook.signing}")
+	private String webhookSigningSecret;
+
 	private User testUser;
 
 	@BeforeEach
@@ -49,6 +68,12 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		testUser = new User("Kevin", "Ngo", "kevin@example.com",
 				passwordEncoder.encode("pass123"), AuthProvider.LOCAL, UserRole.USER);
 		userRepository.saveAndFlush(testUser);
+
+		Session fakeSession = new Session();
+		fakeSession.setId("cs_test_" + UUID.randomUUID());
+		fakeSession.setUrl("https://checkout.stripe.com/c/pay/cs_test_mock");
+		fakeSession.setPaymentIntent("pi_test_" + UUID.randomUUID());
+		when(checkoutService.checkout(any())).thenReturn(fakeSession);
 	}
 
 	private String extractIdFromMockMvc(String uri, String json) throws Exception {
@@ -73,11 +98,11 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").exists())
+				.andExpect(jsonPath("$.booking.id").exists())
 				.andReturn();
 
 		JsonNode rootNode = objectMapper.readTree(result.getResponse().getContentAsString());
-		return rootNode.get("id").asString();
+		return rootNode.get("booking").get("id").asString();
 	}
 
 	private String createVenue() throws Exception {
@@ -119,11 +144,70 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		return extractIdFromMockMvcWithJwtClaim("/api/v1/bookings", String.format("""
 				{
 				    "priceCents": 20000,
-				    "status": "PENDING",
 				    "eventId": "%s",
 				    "seatId": "%s"
 				}
 				""", eventId, seatId));
+	}
+
+	/**
+	 * Builds a checkout.session.completed payload shaped like Stripe's real webhook body -
+	 * only the fields BookingService/PaymentDTOMapper actually read are populated.
+	 */
+	private String checkoutSessionCompletedPayload(String bookingId, String paymentIntentId,
+			long amountSubtotalCents, String currency) {
+		return String.format("""
+				{
+				  "id": "evt_test_%s",
+				  "object": "event",
+				  "api_version": "%s",
+				  "created": %d,
+				  "type": "checkout.session.completed",
+				  "livemode": false,
+				  "pending_webhooks": 1,
+				  "request": {"id": null, "idempotency_key": null},
+				  "data": {
+				    "object": {
+				      "id": "cs_test_%s",
+				      "object": "checkout.session",
+				      "mode": "payment",
+				      "status": "complete",
+				      "payment_status": "paid",
+				      "payment_intent": "%s",
+				      "amount_subtotal": %d,
+				      "amount_total": %d,
+				      "currency": "%s",
+				      "metadata": {"bookingId": "%s"}
+				    }
+				  }
+				}
+				""", UUID.randomUUID(), Stripe.API_VERSION, Instant.now().getEpochSecond(), UUID.randomUUID(),
+				paymentIntentId, amountSubtotalCents, amountSubtotalCents, currency.toLowerCase(), bookingId);
+	}
+
+	private String signedWebhookHeader(String payload) throws Exception {
+		return Webhook.Signature.generateSignatureHeader(payload, webhookSigningSecret);
+	}
+
+	/** Confirms payment for a booking the same way Stripe would, via the webhook endpoint. */
+	private void confirmPaymentViaWebhook(String bookingId, String paymentIntentId,
+			long amountSubtotalCents, String currency) throws Exception {
+		String payload = checkoutSessionCompletedPayload(bookingId, paymentIntentId, amountSubtotalCents, currency);
+
+		mockMvc.perform(post("/api/v1/stripe/webhooks")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Stripe-Signature", signedWebhookHeader(payload))
+				.content(payload))
+				.andExpect(status().isOk());
+	}
+
+	private String getPaymentIdForBooking(String bookingId) throws Exception {
+		MvcResult result = mockMvc.perform(get("/api/v1/bookings/" + bookingId + "/payments")
+				.with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		return objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asString();
 	}
 
 	@Test
@@ -133,28 +217,8 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		String eventId = createEvent(venueId);
 		String bookingId = createBooking(eventId, seatId);
 
-		String paymentJson = String.format("""
-				{
-				    "stripePaymentIntentId": "pi_123456789",
-				    "amountCents": 20000,
-				    "currency": "AUD",
-				    "status": "SUCCEEDED",
-				    "purchasedAt": "%s",
-				    "refundedAt": null,
-				    "bookingId": "%s"
-				}
-				""", Instant.now().toString(), bookingId);
-
-		MvcResult result = mockMvc.perform(post("/api/v1/payments")
-				.with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))
-						.jwt(builder -> builder.subject(testUser.getEmail())
-								.claim("userId", testUser.getId().toString())))
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(paymentJson))
-				.andExpect(status().isOk())
-				.andReturn();
-
-		String paymentId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id").asString();
+		confirmPaymentViaWebhook(bookingId, "pi_" + UUID.randomUUID(), 20000, "AUD");
+		String paymentId = getPaymentIdForBooking(bookingId);
 
 		mockMvc.perform(get("/api/v1/payments/" + paymentId))
 				.andExpect(status().isUnauthorized());
@@ -168,36 +232,16 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		String eventId = createEvent(venueId);
 		String bookingId = createBooking(eventId, seatId);
 
-		String paymentJson = String.format("""
-				{
-				    "stripePaymentIntentId": "pi_123456789",
-				    "amountCents": 20000,
-				    "currency": "AUD",
-				    "status": "SUCCEEDED",
-				    "purchasedAt": "%s",
-				    "refundedAt": null,
-				    "bookingId": "%s"
-				}
-				""", Instant.now().toString(), bookingId);
-
-		MvcResult result = mockMvc.perform(post("/api/v1/payments")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(paymentJson))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").exists())
-				.andExpect(jsonPath("$.amountCents").value(20000))
-				.andExpect(jsonPath("$.currency").value("AUD"))
-				.andExpect(jsonPath("$.status").value("SUCCEEDED"))
-				.andExpect(jsonPath("$.bookingId").value(bookingId))
-				.andReturn();
-
-		String paymentId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id")
-				.asString();
+		confirmPaymentViaWebhook(bookingId, "pi_" + UUID.randomUUID(), 20000, "AUD");
+		String paymentId = getPaymentIdForBooking(bookingId);
 
 		mockMvc.perform(get("/api/v1/payments/" + paymentId))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(paymentId))
-				.andExpect(jsonPath("$.status").value("SUCCEEDED"));
+				.andExpect(jsonPath("$.amountCents").value(20000))
+				.andExpect(jsonPath("$.currency").value("aud"))
+				.andExpect(jsonPath("$.status").value("SUCCEEDED"))
+				.andExpect(jsonPath("$.bookingId").value(bookingId));
 
 		mockMvc.perform(get("/api/v1/payments/" + paymentId + "/booking"))
 				.andExpect(status().isOk())
@@ -212,23 +256,8 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		String eventId = createEvent(venueId);
 		String bookingId = createBooking(eventId, seatId);
 
-		String paymentJson = String.format("""
-				{
-				    "stripePaymentIntentId": "pi_123456789",
-				    "amountCents": 20000,
-				    "currency": "AUD",
-				    "status": "SUCCEEDED",
-				    "purchasedAt": "%s",
-				    "refundedAt": null,
-				    "bookingId": "%s"
-				}
-				""", Instant.now().toString(), bookingId);
-
-		String paymentId = objectMapper.readTree(mockMvc.perform(post("/api/v1/payments")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(paymentJson))
-				.andExpect(status().isOk())
-				.andReturn().getResponse().getContentAsString()).get("id").asString();
+		confirmPaymentViaWebhook(bookingId, "pi_" + UUID.randomUUID(), 20000, "AUD");
+		String paymentId = getPaymentIdForBooking(bookingId);
 
 		String updatePaymentJson = String.format("""
 				{
@@ -247,57 +276,17 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 	}
 
 	@Test
-	@WithMockUser(roles = "ADMIN")
-	void shouldReturnNotFoundWhenBookingDoesNotExistOnPaymentCreation() throws Exception {
-		UUID bookingId = UUID.randomUUID();
-		String paymentJson = String.format("""
-				{
-				    "stripePaymentIntentId": "pi_123456789",
-				    "amountCents": 20000,
-				    "currency": "AUD",
-				    "status": "SUCCEEDED",
-				    "purchasedAt": "%s",
-				    "refundedAt": null,
-				    "bookingId": "%s"
-				}
-				""", Instant.now().toString(), bookingId);
+	void shouldFailWebhookProcessingWhenBookingDoesNotExist() throws Exception {
+		String bookingId = UUID.randomUUID().toString();
+		String payload = checkoutSessionCompletedPayload(bookingId, "pi_" + UUID.randomUUID(), 20000, "AUD");
 
-		mockMvc.perform(post("/api/v1/payments")
+		// Stripe webhooks have no client waiting on a response body/shape - a processing
+		// failure just surfaces as a 500 so Stripe retries. No Payment should be persisted.
+		mockMvc.perform(post("/api/v1/stripe/webhooks")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(paymentJson))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.path").value("/api/v1/payments"))
-				.andExpect(jsonPath("$.message")
-						.value("Booking associated with this payment not found " + bookingId));
-	}
-
-	@Test
-	@WithMockUser(roles = "ADMIN")
-	void shouldReturnBadRequestWhenPaymentCurrencyIsInvalid() throws Exception {
-		String venueId = createVenue();
-		String seatId = createSeat(venueId);
-		String eventId = createEvent(venueId);
-		String bookingId = createBooking(eventId, seatId);
-
-		String paymentJson = String.format("""
-				{
-				    "stripePaymentIntentId": "pi_123456789",
-				    "amountCents": 20000,
-				    "currency": "US",
-				    "status": "SUCCEEDED",
-				    "purchasedAt": "%s",
-				    "refundedAt": null,
-				    "bookingId": "%s"
-				}
-				""", Instant.now().toString(), bookingId);
-
-		mockMvc.perform(post("/api/v1/payments")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(paymentJson))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.path").value("/api/v1/payments"))
-				.andExpect(jsonPath("$.message")
-						.value(containsString("currency: size must be between 3 and 3")));
+				.header("Stripe-Signature", signedWebhookHeader(payload))
+				.content(payload))
+				.andExpect(status().isInternalServerError());
 	}
 
 	@Test
@@ -313,31 +302,8 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 		String eventId = createEvent(venueId);
 		String bookingId = createBooking(eventId, seatId);
 
-		String paymentJson = String.format("""
-				{
-				"stripePaymentIntentId": "pi_123456789",
-				"amountCents": 20000,
-				"currency": "AUD",
-				"status": "SUCCEEDED",
-				"purchasedAt": "%s",
-				"refundedAt": null,
-				"bookingId": "%s"
-				}
-				""", Instant.now().toString(), bookingId);
-
-		MvcResult result = mockMvc.perform(post("/api/v1/payments")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(paymentJson))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").exists())
-				.andExpect(jsonPath("$.amountCents").value(20000))
-				.andExpect(jsonPath("$.currency").value("AUD"))
-				.andExpect(jsonPath("$.status").value("SUCCEEDED"))
-				.andExpect(jsonPath("$.bookingId").value(bookingId))
-				.andReturn();
-
-		String paymentId = objectMapper.readTree(result.getResponse().getContentAsString()).get("id")
-				.asString();
+		confirmPaymentViaWebhook(bookingId, "pi_" + UUID.randomUUID(), 20000, "AUD");
+		String paymentId = getPaymentIdForBooking(bookingId);
 
 		mockMvc.perform(get("/api/v1/payments/" + paymentId)
 				.with(jwt()

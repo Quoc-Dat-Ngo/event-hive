@@ -1,6 +1,7 @@
 package com.eventhive.integration;
 
 import com.eventhive.AbstractWebIntegrationTest;
+import com.eventhive.redis.SeatLockService;
 import com.eventhive.users.AuthProvider;
 import com.eventhive.users.User;
 import com.eventhive.users.UserRepository;
@@ -12,7 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
@@ -24,8 +30,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import com.eventhive.stripe.StripeHostedCheckoutService;
+import com.stripe.model.checkout.Session;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -47,6 +60,12 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private SeatLockService seatLockService;
+
+    @MockitoBean
+    private StripeHostedCheckoutService checkoutService;
+
     private User user;
     private String seatId;
     private String eventId;
@@ -67,6 +86,12 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
 
     @BeforeEach
     void setupData() throws Exception {
+        Session fakeSession = new Session();
+        fakeSession.setId("cs_test_" + UUID.randomUUID());
+        fakeSession.setUrl("https://checkout.stripe.com/c/pay/cs_test_mock");
+        fakeSession.setPaymentIntent("pi_test_" + UUID.randomUUID());
+        when(checkoutService.checkout(any())).thenReturn(fakeSession);
+
         this.venueId = extractIdFromMockMvc("/api/v1/venues", """
                 {
                     "name": "CBD",
@@ -103,7 +128,6 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
         String bookingJson = String.format("""
                 {
                     "priceCents": 20000,
-                    "status": "PENDING",
                     "eventId": "%s",
                     "seatId": "%s"
                 }
@@ -115,17 +139,61 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookingJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.priceCents").exists())
-                .andExpect(jsonPath("$.status").exists())
-                .andExpect(jsonPath("$.userId").exists())
-                .andExpect(jsonPath("$.eventId").exists())
-                .andExpect(jsonPath("$.seatId").exists());
+                .andExpect(jsonPath("$.booking.id").exists())
+                .andExpect(jsonPath("$.booking.priceCents").exists())
+                .andExpect(jsonPath("$.booking.status").exists())
+                .andExpect(jsonPath("$.booking.userId").exists())
+                .andExpect(jsonPath("$.booking.eventId").exists())
+                .andExpect(jsonPath("$.booking.seatId").exists());
 
-        Long expireTimeSeconds = redisTemplate.getExpire("seat-lock:" + seatId, TimeUnit.SECONDS);
+        Long expireTimeSeconds = redisTemplate.getExpire("seat-lock:" + eventId + ":" + seatId, TimeUnit.SECONDS);
 
         assertThat(expireTimeSeconds).isNotNull();
         assertThat(expireTimeSeconds).isGreaterThan(290);
         assertThat(expireTimeSeconds).isLessThan(300);
+    }
+
+    @Test
+    void shouldOnlyAllowOneThreadToAcquireLockConcurrently() throws Exception {
+        UUID seatUuid = UUID.fromString(seatId);
+        UUID eventUuid = UUID.fromString(eventId);
+        UUID firstUserId = UUID.randomUUID();
+        UUID secondUserId = UUID.randomUUID();
+
+        CountDownLatch readyLatch = new CountDownLatch(2);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicBoolean firstResult = new AtomicBoolean();
+        AtomicBoolean secondResult = new AtomicBoolean();
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            executor.submit(() -> {
+                readyLatch.countDown();
+                awaitUninterruptibly(startLatch);
+                firstResult.set(seatLockService.tryLock(seatUuid, eventUuid, firstUserId));
+            });
+            executor.submit(() -> {
+                readyLatch.countDown();
+                awaitUninterruptibly(startLatch);
+                secondResult.set(seatLockService.tryLock(seatUuid, eventUuid, secondUserId));
+            });
+
+            readyLatch.await();
+            startLatch.countDown();
+            executor.shutdown();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertThat(firstResult.get() ^ secondResult.get()).isTrue();
+    }
+
+    private static void awaitUninterruptibly(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

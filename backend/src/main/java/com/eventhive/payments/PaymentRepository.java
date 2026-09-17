@@ -1,6 +1,5 @@
 package com.eventhive.payments;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,7 +23,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 			FROM Payment p
 			WHERE p.booking.id = ?1
 			""")
-	List<PaymentSummaryDTO> findAllPaymentsByBookingId(UUID bookingId);
+	Optional<PaymentSummaryDTO> findPaymentByBookingId(UUID bookingId);
 
 	@Query("""
 			SELECT u.id

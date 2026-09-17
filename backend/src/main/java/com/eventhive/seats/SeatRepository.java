@@ -12,6 +12,8 @@ import com.eventhive.events.VenueSummaryDTO;
 import com.eventhive.venues.SeatSummaryDTO;
 
 public interface SeatRepository extends JpaRepository<Seat, UUID>, JpaSpecificationExecutor<Seat> {
+    boolean existsByVenue_Id(UUID venueId);
+
     @Query("""
             SELECT NEW com.eventhive.events.VenueSummaryDTO(v.name, v.location, v.capacity)
             FROM Seat s

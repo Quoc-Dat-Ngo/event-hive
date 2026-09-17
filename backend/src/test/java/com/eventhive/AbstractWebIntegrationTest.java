@@ -12,7 +12,10 @@ import com.eventhive.helpers.TestUtility;
 @TestPropertySource(properties = {
         "jwt.secret=test-secret-key-not-for-production-use-only-testing-32bytes+",
         "eventhive.admin.email=admin@gmail.com",
-        "eventhive.admin.password=adminpassword"
+        "eventhive.admin.password=adminpassword",
+        "eventhive.seed.enabled=false",
+        "stripe.secret=sk_test_51MockStripeSecretKeyPlaceholder00000000",
+        "stripe.webhook.signing=whsec_mockSecretKeyForTestingWebhookSignatures1234567890"
 })
 public class AbstractWebIntegrationTest extends TestContainerInitialiser {
     @Autowired

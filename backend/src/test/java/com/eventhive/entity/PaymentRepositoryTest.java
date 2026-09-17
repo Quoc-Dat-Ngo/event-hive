@@ -28,7 +28,6 @@ import com.eventhive.venues.VenueRepository;
 import static org.assertj.core.api.Assertions.*;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 public class PaymentRepositoryTest extends AbstractRepositoryTest {
@@ -74,7 +73,7 @@ public class PaymentRepositoryTest extends AbstractRepositoryTest {
 	@Test
 	public void shouldReturnAssociatedBooking() {
 		Payment p = paymentRepository
-				.save(new Payment("placeholder_id", 40000, "AUD", PaymentStatus.SUCCEEDED, booking));
+				.save(new Payment("placeholder_id", 40000L, "AUD", PaymentStatus.SUCCEEDED, booking));
 
 		Optional<BookingSummaryDTO> summary = paymentRepository.findBookingAssociatedWithPaymentId(p.getId());
 
@@ -91,27 +90,16 @@ public class PaymentRepositoryTest extends AbstractRepositoryTest {
 	@Test
 	public void shouldReturnAllAssociatedPayments() {
 		Payment payment1 = paymentRepository
-				.save(new Payment("placeholder_id", 40000, "AUD", PaymentStatus.SUCCEEDED, booking));
-		Payment payment2 = paymentRepository
-				.save(new Payment("placeholder_id", 25050, "AUD", PaymentStatus.FAILED, booking));
-		Payment payment3 = paymentRepository
-				.save(new Payment("placeholder_id", 18010, "AUD", PaymentStatus.REFUNDED, booking));
+				.save(new Payment("placeholder_id", 40000L, "AUD", PaymentStatus.SUCCEEDED, booking));
 
-		List<PaymentSummaryDTO> summary = paymentRepository.findAllPaymentsByBookingId(booking.getId());
+		PaymentSummaryDTO summary = paymentRepository.findPaymentByBookingId(booking.getId()).orElse(null);
 
+		assertThat(summary).isNotNull();
 		assertThat(summary)
-				.extracting("id", "stripePaymentIntentId", "amountCents", "currency", "status",
-						"purchasedAt",
+				.extracting("id", "stripePaymentIntentId", "amountCents", "currency", "status", "purchasedAt",
 						"refundedAt")
-				.contains(
-						tuple(payment1.getId(), "placeholder_id", 40000, "AUD",
-								PaymentStatus.SUCCEEDED,
-								payment1.getPurchasedAt(), null),
-						tuple(payment2.getId(), "placeholder_id", 25050, "AUD",
-								PaymentStatus.FAILED,
-								payment2.getPurchasedAt(), null),
-						tuple(payment3.getId(), "placeholder_id", 18010, "AUD",
-								PaymentStatus.REFUNDED,
-								payment3.getPurchasedAt(), null));
+				.containsExactly(payment1.getId(), "placeholder_id", 40000L, "AUD", PaymentStatus.SUCCEEDED,
+						payment1.getPurchasedAt(), null);
 	}
+
 }
