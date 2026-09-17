@@ -95,14 +95,11 @@ public class PaymentRepositoryTest extends AbstractRepositoryTest {
 		PaymentSummaryDTO summary = paymentRepository.findPaymentByBookingId(booking.getId()).orElse(null);
 
 		assertThat(summary).isNotNull();
-
 		assertThat(summary)
-				.extracting("id", "stripePaymentIntentId", "amountCents", "currency", "status",
-						"purchasedAt",
+				.extracting("id", "stripePaymentIntentId", "amountCents", "currency", "status", "purchasedAt",
 						"refundedAt")
-				.contains(
-						tuple(payment1.getId(), "placeholder_id", 40000, "AUD",
-								PaymentStatus.SUCCEEDED,
-								payment1.getPurchasedAt(), null));
+				.containsExactly(payment1.getId(), "placeholder_id", 40000L, "AUD", PaymentStatus.SUCCEEDED,
+						payment1.getPurchasedAt(), null);
 	}
+
 }
