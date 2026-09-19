@@ -31,6 +31,10 @@ eventhive:
     password: ${ADMIN_PASSWORD}
   seed:
     enabled: true
+  frontend-url: http://localhost:5173
+
+cors:
+  allowed-origins: ${eventhive.frontend-url}
 
 jwt:
   secret: ${JWT_SECRET_KEY}
