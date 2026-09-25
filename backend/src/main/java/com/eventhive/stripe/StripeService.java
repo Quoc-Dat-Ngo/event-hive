@@ -4,8 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.eventhive.exception.PaymentProcessingException;
+import com.stripe.exception.StripeException;
 import com.stripe.model.Refund;
-import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.RefundCreateParams;
 
@@ -13,23 +14,27 @@ import com.stripe.param.RefundCreateParams;
 public class StripeService {
     private static final Logger logger = LoggerFactory.getLogger(StripeService.class);
 
-    public void initiateRefund(String bookingId, Session session) {
+    /**
+     * Fully refunds a payment intent. Safe to call again for the same intent (e.g. on a
+     * webhook retry): the idempotency key makes Stripe return the original refund.
+     */
+    public void initiateRefund(String bookingId, String paymentIntentId, RefundCreateParams.Reason reason,
+            String note) {
         RefundCreateParams params = RefundCreateParams.builder()
-                .setPaymentIntent(session.getPaymentIntent())
-                .setReason(RefundCreateParams.Reason.DUPLICATE)
+                .setPaymentIntent(paymentIntentId)
+                .setReason(reason)
                 .putMetadata("bookingId", bookingId)
-                .putMetadata("reason", "seat_lost_during_checkout_window")
+                .putMetadata("note", note)
                 .build();
 
         try {
             Refund refund = Refund.create(params, RequestOptions.builder()
-                    .setIdempotencyKey("idem_" + session.getPaymentIntent())
+                    .setIdempotencyKey("refund_" + paymentIntentId)
                     .build());
-            logger.info("Refunded {} for booking {} (refund={})",
-                    session.getPaymentIntent(), bookingId, refund.getId());
-
-        } catch (Exception e) {
-            throw new RuntimeException("Refund failed", e);
+            logger.info("Refunded {} for booking {} (refund={}, note={})",
+                    paymentIntentId, bookingId, refund.getId(), note);
+        } catch (StripeException e) {
+            throw new PaymentProcessingException("Refund failed for payment " + paymentIntentId, e);
         }
     }
 }

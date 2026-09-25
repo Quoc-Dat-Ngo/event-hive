@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eventhive.bookings.BookingService;
+import com.stripe.Stripe;
+import com.stripe.exception.EventDataObjectDeserializationException;
 import com.stripe.model.Event;
+import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 
@@ -56,21 +59,16 @@ public class WebhookController {
 
             switch (event.getType()) {
                 case "checkout.session.completed" -> {
-                    Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
-                    if (session != null) {
-                        Map<String, String> metadata = session.getMetadata();
-                        String bookingId = metadata.get("bookingId");
-                        bookingService.handleSuccessPayment(bookingId, session);
-                    }
+                    Session session = extractSession(event);
+                    Map<String, String> metadata = session.getMetadata();
+                    String bookingId = metadata.get("bookingId");
+                    bookingService.handleSuccessPayment(bookingId, session);
                 }
                 case "checkout.session.expired" -> {
-                    Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
-
-                    if (session != null) {
-                        Map<String, String> metadata = session.getMetadata();
-                        String bookingId = metadata.get("bookingId");
-                        bookingService.handleExpiredPayment(bookingId);
-                    }
+                    Session session = extractSession(event);
+                    Map<String, String> metadata = session.getMetadata();
+                    String bookingId = metadata.get("bookingId");
+                    bookingService.handleExpiredPayment(bookingId);
                 }
                 default -> logger.info("Ignoring unhandled event type: {}", event.getType());
             }
@@ -81,5 +79,23 @@ public class WebhookController {
         }
 
         return ResponseEntity.ok("ok");
+    }
+
+    /**
+     * getObject() is empty whenever the event's API version (the Stripe account's
+     * default, e.g. for `stripe listen`) differs from the SDK's pinned version.
+     * Silently skipping those events left bookings PENDING forever, so fall back
+     * to lenient deserialization - the Checkout Session fields used here
+     * (metadata, payment_intent, amount_subtotal, currency) are stable across versions.
+     */
+    private Session extractSession(Event event) throws EventDataObjectDeserializationException {
+        EventDataObjectDeserializer deserializer = event.getDataObjectDeserializer();
+        if (deserializer.getObject().isPresent()) {
+            return (Session) deserializer.getObject().get();
+        }
+
+        logger.warn("Event {} has API version {} but SDK expects {}; deserializing leniently",
+                event.getId(), event.getApiVersion(), Stripe.API_VERSION);
+        return (Session) deserializer.deserializeUnsafe();
     }
 }
