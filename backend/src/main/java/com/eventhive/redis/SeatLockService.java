@@ -16,11 +16,19 @@ import lombok.RequiredArgsConstructor;
 public class SeatLockService {
     private final RedisTemplate<String, String> redisTemplate;
 
+    /**
+     * How long a seat is held for one checkout attempt. Matches the Stripe Checkout
+     * Session lifetime (Stripe's minimum is 30 min), because the PENDING booking
+     * blocks the seat in the DB for that long anyway - a shorter lock would only
+     * turn a clear "seat reserved" error into a DB constraint violation.
+     */
+    public static final Duration SEAT_HOLD = Duration.ofMinutes(31);
+
     public boolean tryLock(UUID seatId, UUID eventId, UUID userId) {
         String key = "seat-lock:" + eventId.toString() + ":" + seatId.toString();
         String value = userId.toString();
 
-        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(key, value, Duration.ofMinutes(5));
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(key, value, SEAT_HOLD);
 
         return Boolean.TRUE.equals(acquired);
     }
