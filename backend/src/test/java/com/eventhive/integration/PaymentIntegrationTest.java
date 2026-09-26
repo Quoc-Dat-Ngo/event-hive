@@ -128,7 +128,7 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 	private String createEvent(String venueId) throws Exception {
 		Instant startsAt = Instant.now().plusSeconds(3600);
 		Instant endsAt = Instant.now().plusSeconds(7200);
-		return extractIdFromMockMvc("/api/v1/events", String.format("""
+		String eventId = extractIdFromMockMvc("/api/v1/events", String.format("""
 				{
 				    "title": "Euniverse",
 				    "purpose": "Park Eun Bin fan meeting",
@@ -138,6 +138,15 @@ public class PaymentIntegrationTest extends AbstractWebIntegrationTest {
 				    "venueId": "%s"
 				}
 				""", startsAt, endsAt, venueId));
+		// Bookings are priced from the seat's tier, so the seat must belong to one
+		extractIdFromMockMvc("/api/v1/events/" + eventId + "/tiers", """
+				{
+				    "name": "Front stalls",
+				    "priceCents": 20000,
+				    "seatRanges": [{ "rowFrom": "AB" }]
+				}
+				""");
+		return eventId;
 	}
 
 	private String createBooking(String eventId, String seatId) throws Exception {

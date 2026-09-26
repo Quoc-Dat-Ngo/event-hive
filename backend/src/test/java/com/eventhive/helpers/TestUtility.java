@@ -7,6 +7,8 @@ public class TestUtility {
         jdbcTemplate.execute("""
                     TRUNCATE TABLE
                     payments,
+                    price_tier_seats,
+                    price_tiers,
                     bookings,
                     seats,
                     events,

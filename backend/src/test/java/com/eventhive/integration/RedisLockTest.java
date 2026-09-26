@@ -121,10 +121,18 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
                         }
                 """, Instant.now().plus(1, ChronoUnit.DAYS), Instant.now().plus(2, ChronoUnit.DAYS),
                 venueId));
+        // Bookings are priced from the seat's tier, so the seat must belong to one
+        extractIdFromMockMvc("/api/v1/events/" + eventId + "/tiers", """
+                {
+                    "name": "Front stalls",
+                    "priceCents": 20000,
+                    "seatRanges": [{ "rowFrom": "AB" }]
+                }
+                """);
     }
 
     @Test
-    void shouldLockKeyWithFiveMinuteTimeout() throws Exception {
+    void shouldLockKeyForTheCheckoutSessionLifetime() throws Exception {
         String bookingJson = String.format("""
                 {
                     "priceCents": 20000,
@@ -149,8 +157,9 @@ public class RedisLockTest extends AbstractWebIntegrationTest {
         Long expireTimeSeconds = redisTemplate.getExpire("seat-lock:" + eventId + ":" + seatId, TimeUnit.SECONDS);
 
         assertThat(expireTimeSeconds).isNotNull();
-        assertThat(expireTimeSeconds).isGreaterThan(290);
-        assertThat(expireTimeSeconds).isLessThan(300);
+        // 31 minutes, matching the Stripe Checkout Session expiry
+        assertThat(expireTimeSeconds).isGreaterThan(31 * 60 - 10);
+        assertThat(expireTimeSeconds).isLessThanOrEqualTo(31 * 60);
     }
 
     @Test
