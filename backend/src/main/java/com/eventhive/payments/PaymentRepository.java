@@ -25,6 +25,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 			""")
 	Optional<PaymentSummaryDTO> findPaymentByBookingId(UUID bookingId);
 
+	Optional<Payment> findByBookingId(UUID bookingId);
+
 	@Query("""
 			SELECT u.id
 			FROM Payment p

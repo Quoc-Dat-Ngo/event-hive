@@ -1,4 +1,4 @@
-package com.eventhive.bookings;
+package com.eventhive.tiers;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -7,13 +7,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.eventhive.events.Event;
-import com.eventhive.seats.Seat;
-import com.eventhive.users.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,24 +23,21 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "price_tiers")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Booking {
+public class PriceTier {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(nullable = false)
     private Integer priceCents;
-
-    @Enumerated(value = EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private BookingStatus status;
-
-    // Stripe Checkout Session paying for this booking; set right after checkout starts
-    private String checkoutSessionId;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -54,22 +47,12 @@ public class Booking {
     private Instant updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id", nullable = false)
-    private Seat seat;
-
-    public Booking(Integer priceCents, BookingStatus status, User user, Event event, Seat seat) {
+    public PriceTier(String name, Integer priceCents, Event event) {
+        this.name = name;
         this.priceCents = priceCents;
-        this.status = status;
-        this.user = user;
         this.event = event;
-        this.seat = seat;
     }
 }

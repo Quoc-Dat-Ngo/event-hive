@@ -1,5 +1,6 @@
 package com.eventhive.bookings;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,4 +57,18 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             WHERE b.id = ?1
             """)
     Optional<UUID> getUserId(UUID bookingId);
+
+    @Query("""
+            SELECT b.seat.id
+            FROM Booking b
+            WHERE b.event.id = ?1 AND b.status IN ?2
+            """)
+    List<UUID> findSeatIdsByEventIdAndStatusIn(UUID eventId, Collection<BookingStatus> statuses);
+
+    boolean existsByEventIdAndSeatIdInAndStatusIn(UUID eventId, Collection<UUID> seatIds,
+            Collection<BookingStatus> statuses);
+
+    // At most one match: the V5 partial unique index allows one PENDING/CONFIRMED booking per seat
+    Optional<Booking> findFirstByEventIdAndSeatIdAndStatusIn(UUID eventId, UUID seatId,
+            Collection<BookingStatus> statuses);
 }

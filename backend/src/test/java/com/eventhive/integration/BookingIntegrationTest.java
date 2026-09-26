@@ -117,6 +117,14 @@ public class BookingIntegrationTest extends AbstractWebIntegrationTest {
 				        }
 				""", Instant.now().plus(1, ChronoUnit.DAYS), Instant.now().plus(2, ChronoUnit.DAYS),
 				venueId));
+		// Bookings are priced from the seat's tier, so the seat must belong to one
+		extractIdFromMockMvc("/api/v1/events/" + eventId + "/tiers", """
+				{
+				    "name": "Front stalls",
+				    "priceCents": 20000,
+				    "seatRanges": [{ "rowFrom": "AB" }]
+				}
+				""");
 	}
 
 	@Test
