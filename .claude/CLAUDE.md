@@ -39,7 +39,7 @@ CI (`.github/workflows/ci.yaml`) runs only `backend/./gradlew test` on PRs to `m
 ## Backend architecture
 
 ### Package layout
-Vertical slices by domain under `com.eventhive`: `users`, `venues`, `events`, `seats`, `bookings`, `payments`, plus cross-cutting `auth`, `security`, `redis`, `stripe`, `config`, `exception`.
+Vertical slices by domain under `com.eventhive`: `users`, `venues`, `events`, `seats`, `tiers`, `bookings`, `payments`, plus cross-cutting `auth`, `security`, `redis`, `stripe`, `config`, `exception`.
 
 Each slice follows the same file set and it is expected that new domains match it:
 `Entity` / `Repository` (Spring Data JPA) / `Service` / `Controller` / `XxxDTO` + `XxxDTOMapper` (a `Function<Entity, DTO>` `@Service`) / `XxxRegistrationRequest` + `XxxUpdateRequest` records / `XxxSecurity` component for ownership checks. Constructor injection via Lombok `@RequiredArgsConstructor` throughout.
@@ -47,14 +47,26 @@ Each slice follows the same file set and it is expected that new domains match i
 `XxxSummaryDTO` types exist to expose a related entity across slice boundaries without leaking the entity (e.g. `venues.EventSummaryDTO` is returned by booking endpoints). Note they sometimes live in the *referenced* slice's package, not the referencing one.
 
 ### Seat locking (the core concurrency mechanism)
-`redis.SeatLockService` holds a Redis key `seat-lock:{eventId}:{seatId}` whose value is the locking user's id, with a **5-minute TTL**, acquired with `SETNX`. Release is done through a Lua script (`src/main/resources/scripts/releaseLock.lua`) so the delete is compare-and-delete on the owning user — never release with a plain `DEL`.
+`redis.SeatLockService` holds a Redis key `seat-lock:{eventId}:{seatId}` whose value is the locking user's id, acquired with `SETNX`. Its TTL is `SeatLockService.SEAT_HOLD` (**31 minutes**), which is also the Stripe Checkout Session's `expires_at`. Keep the two equal: the `PENDING` booking blocks the seat in the DB for the whole session anyway. Release is done through a Lua script (`src/main/resources/scripts/releaseLock.lua`) so the delete is compare-and-delete on the owning user — never release with a plain `DEL`.
 
-`BookingService.addBooking` acquires the lock before persisting the booking and releases it in a `catch (RuntimeException)` before rethrowing. Failure to acquire throws `SeatAlreadyLockedException`.
+The DB is the final guard: the V5 partial unique index allows one `PENDING`/`CONFIRMED` booking per (event, seat). Before locking, `BookingService.addBooking` looks up the active booking for the seat:
+- `CONFIRMED` → `DuplicateResourceException`.
+- `PENDING` within the window, same user → **resume**: returns the booking's still-open session URL (`checkoutSessionId` column, V7) with HTTP 200 and `resumed: true`.
+- `PENDING` within the window, another user → `SeatAlreadyLockedException`.
+- `PENDING` past the window (missed expiry webhook) → mark it `EXPIRED`, expire its session, and continue.
+
+It then takes the lock and persists the booking, releasing the lock on any `RuntimeException`. A DB unique violation from a lost race is rethrown as `SeatAlreadyLockedException`.
+
+### Pricing (`tiers`)
+Customers never send a price. Organisers and admins define `PriceTier`s per event (`/api/v1/events/{eventId}/tiers`), each built from one or more `SeatRange`s (rows ordered A–Z then AA–ZZ; seat-number bounds are optional) matched against the event venue's seats. Assignments live in `price_tier_seats`, whose `UNIQUE(event_id, seat_id)` means a seat has at most one price per event. A seat with no tier is not on sale. `addBooking` copies the tier's `priceCents` onto the booking, so later tier price changes don't affect existing bookings. A tier can't be deleted while its seats have `PENDING`/`CONFIRMED` bookings. `GET /api/v1/events/{eventId}/seats` returns the seat map (tier, price, availability).
 
 ### Payment flow (Stripe hosted checkout)
 1. `POST /api/v1/bookings` → lock seat → save `Booking` with `PENDING` → `StripeHostedCheckoutService.checkout(booking)` creates a Checkout Session carrying `bookingId` in session metadata → response returns the DTO plus the Stripe redirect URL.
 2. Stripe calls `POST /api/v1/stripe/webhooks` (permit-all; verified by signature against `stripe.webhook.signing`). `WebhookController` dispatches on event type to `BookingService.handleSuccessPayment` / `handleExpiredPayment`, recovering the booking from session metadata.
-3. `handleSuccessPayment` is idempotent and handles the race where the seat was already confirmed by a different payment intent during the lock TTL: it initiates a Stripe refund and sets the `Payment` to `REFUNDED`.
+3. `handleSuccessPayment` is idempotent: if the payment intent is already recorded for the booking, it does nothing. A `PENDING` booking is confirmed. Otherwise (the booking was already `EXPIRED`/`CANCELLED`, or was paid with a different intent), the new intent is refunded, and a `REFUNDED` `Payment` is recorded only if the booking has none (one payment per booking).
+4. `handleExpiredPayment` only moves `PENDING` → `EXPIRED`; for any other status it logs and returns 200, so Stripe stops retrying.
+
+`POST /api/v1/bookings/{id}/cancel` (owner or admin), and an admin `PUT` with `status: CANCELLED`, go through `BookingService.cancel`. Customers can cancel only up to `BookingService.CANCELLATION_CUTOFF` (48h) before the event starts; admins can cancel at any time. In `cancel`, a `PENDING` booking has its Stripe session expired and its seat lock released; a `CONFIRMED` booking is refunded (`Payment` → `REFUNDED`). Refunds go through `StripeService.initiateRefund`, which uses the idempotency key `refund_{paymentIntentId}`.
 
 Bookings are only ever confirmed through the webhook path, never by the HTTP request that started checkout.
 
@@ -72,7 +84,7 @@ Errors: throw the domain exceptions in `com.eventhive.exception`; `GlobalExcepti
 ### Database
 Flyway-managed, `ddl-auto: validate` — **schema changes require a new `V{n}__*.sql` in `src/main/resources/db/migration`**, never an entity-only change. Existing migrations encode important invariants (unique payment intent id, unique booking per seat scoped by status, one payment per booking).
 
-`config/*Seeder.java` are `ApplicationRunner`s ordered with `@Order` (Venue → Seat → Event, plus `AdminSeeder`), gated on `eventhive.seed.enabled` and disabled in tests.
+`config/*Seeder.java` are `ApplicationRunner`s ordered with `@Order` (Venue → Seat → Event → PriceTier, plus `AdminSeeder`), gated on `eventhive.seed.enabled` and disabled in tests.
 
 ### Tests
 - `AbstractRepositoryTest` — `@DataJpaTest` against a real Postgres.
@@ -82,4 +94,8 @@ Flyway-managed, `ddl-auto: validate` — **schema changes require a new `V{n}__*
 
 ## Frontend
 
-Minimal Vite + React 19 SPA, JS (not TS), no router or state library yet; `src/App.jsx` is effectively the whole app. Lint is oxlint, not ESLint. Backend API base is `http://localhost:8181`.
+Minimal Vite + React 19 SPA, JS (not TS), Tailwind v4 (via `@tailwindcss/vite`), no router or state library — `App.jsx` switches between tabbed pages in `src/pages/`. Lint is oxlint, not ESLint.
+
+- `src/api.js` is the only place that calls `fetch` (base `http://localhost:8181/api/v1`). The access token is kept in memory; the refresh token is the backend's httpOnly cookie, so requests use `credentials: 'include'`, and a 401 triggers one refresh-and-retry. The public auth endpoints are called without a bearer header, because Spring rejects expired tokens even on permit-all routes.
+- `src/components/ui.jsx` holds presentational primitives; hooks and formatters live in `src/hooks.js` (kept separate for Fast Refresh).
+- The dev server is pinned to port **5173**, which must match `eventhive.frontend-url` in `application.yaml`. That value drives both the CORS allowed origin (`SecurityConfig.corsConfigurationSource`) and Stripe's success/cancel redirects (`/?checkout=success|cancelled&bookingId=…`).
