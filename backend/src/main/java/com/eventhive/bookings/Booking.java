@@ -43,6 +43,9 @@ public class Booking {
     @Column(nullable = false, length = 50)
     private BookingStatus status;
 
+    // Stripe Checkout Session paying for this booking; set right after checkout starts
+    private String checkoutSessionId;
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
